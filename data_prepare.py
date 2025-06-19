@@ -96,3 +96,31 @@ def build_description(row, nodes: pd.DataFrame, authors_with_inform: pd.DataFram
         res.append(f"\nи ещё {total - max_display} совместных работ.")
     return '<br>'.join(res)
 
+
+def wrap_text(txt: str, width: int = 50) -> str:
+    sentences = txt.split('<br>')
+    res = []
+    for sentence in sentences:
+        words = sentence.split(' ')
+        lines, cur = [], ''
+        for w in words:
+            if len(cur) + len(w) + 1 > width:
+                lines.append(cur)
+                cur = w
+            else:
+                cur = f"{cur} {w}".strip()
+        lines.append(cur)
+        res.append('<br>'.join(lines))
+    return '<br>'.join(res)
+
+
+def id_to_name(ID: str, nodes: pd.DataFrame) -> pd.DataFrame:
+    return nodes.loc[nodes['id'] == ID, 'label'].iloc[0]
+
+
+def scale_coordinates(series: pd.Series, new_min: int = 0, new_max: int = 1000) -> pd.Series:
+    old_min = series.min()
+    old_max = series.max()
+    return new_min + (series - old_min) * (new_max - new_min) / (old_max - old_min)
+
+
