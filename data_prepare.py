@@ -23,6 +23,23 @@ def load_publication(org_id: str) -> pd.DataFrame:
     return pd.read_csv(f'org_data/processed/{org_id}/publications.csv')
 
 
+def load_nodes(org_id: str) -> pd.DataFrame:
+    nodes = pd.read_csv(f'org_data/processed/{org_id}/map.txt', sep='\t')
+
+    rename_dict = {
+        'weight<Links>': 'Links',
+        'weight<Total link strength>': 'Strength',
+        'weight<Documents>': 'Documents',
+        'weight<Citations>': 'Citations',
+        'weight<Norm. citations>': 'Norm_citations',
+        'score<Avg. pub. year>': 'Avg_pub_year',
+        'score<Avg. citations>': 'Avg_citations',
+        'score<Avg. norm. citations>': 'Avg_norm_citations'
+    }
+    nodes = nodes.rename(columns=rename_dict)
+    return nodes
+
+
 def standardize_author_names(names: str, replace_dict: dict) -> list:
     arr_authors = [name.replace('et al.', '').strip() for name in names.split(';')]
     res = []
