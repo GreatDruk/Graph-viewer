@@ -17,3 +17,10 @@ def load_thesaurus(org_id: str) -> dict:
     )
 
     return replace_dict
+
+def standardize_author_names(names: str, replace_dict: dict) -> list:
+    arr_authors = [name.replace('et al.', '').strip() for name in names.split(';')]
+    res = []
+    for name in arr_authors:
+        res.append(replace_dict.get(name, name).lower())
+    return res
