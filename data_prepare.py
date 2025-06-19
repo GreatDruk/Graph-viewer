@@ -72,3 +72,27 @@ def build_authors_with_inform(publication: pd.DataFrame, replace_dict: dict) -> 
         })
     )
     return df
+
+
+def build_description(row, nodes: pd.DataFrame, authors_with_inform: pd.DataFrame, max_display: int = 3) -> str:
+    first = nodes.loc[nodes['id'] == row['first_author'], 'label'].iloc[0]
+    second = nodes.loc[nodes['id'] == row['second_author'], 'label'].iloc[0]
+
+    first_inform = authors_with_inform[authors_with_inform['Authors'] == first].iloc[0]
+    second_inform = authors_with_inform[authors_with_inform['Authors'] == second].iloc[0]
+
+    first_works = set(zip(first_inform['Title'], first_inform['Year'],
+                          first_inform['Source title'], first_inform['Cited by']))
+    second_works = set(zip(second_inform['Title'], second_inform['Year'],
+                           second_inform['Source title'], second_inform['Cited by']))
+    
+    common = sorted(first_works & second_works, key=lambda x: x[-1], reverse=True)
+
+    res = []
+    for number, inform in enumerate(common[:max_display], 1):
+        res.append(f"{number}. {inform[0]}, {inform[1]}")
+    total = len(common)
+    if total > max_display:
+        res.append(f"\nи ещё {total - max_display} совместных работ.")
+    return '<br>'.join(res)
+
