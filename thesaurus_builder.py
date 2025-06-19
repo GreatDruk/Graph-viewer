@@ -32,3 +32,18 @@ def build_author_thesaurus(org_id: str, similariti_coefficient: float = 0.8, sur
         return translit(name, 'ru', reversed=True)
 
     X['Ready'] = X['Ready'].apply(transliterate_name)
+
+    # Separation of last name and initials
+    X['Surnames'] = X['Ready'].apply(lambda x: x.split()[0] if len(x.split()) > 0 else '')
+    X['Initials'] = X['Ready'].apply(lambda x: x.split()[1] if len(x.split()) > 1 else '')
+
+    # Algorithm for searching for similar surnames
+    print("Searching for similar surnames...")
+    vectorizer = TfidfVectorizer(analyzer='char', ngram_range=(1, 2))  # ngram_range an be changed
+    matrix = vectorizer.fit_transform(X['Surnames'])
+    similarity = cosine_similarity(matrix)
+
+    # Assembling a thesaurus
+    print("Assembling a thesaurus...")
+    thesaurus = {}
+    total = len(similarity)
