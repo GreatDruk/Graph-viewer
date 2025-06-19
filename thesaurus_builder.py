@@ -9,3 +9,9 @@ def build_author_thesaurus(org_id: str, similariti_coefficient: float = 0.8, sur
 
     print("Uploading data...")
     df = pd.read_csv(INPUT_FILE)
+
+    print("Author processing...")
+    authors = df['Authors'].dropna()
+    authors = authors.str.split('; ').explode()
+    authors = authors[~authors.str.strip().str.lower().str.endswith(('et al.', 'et al'))]
+    authors = authors.drop_duplicates().reset_index(drop=True)
