@@ -47,3 +47,39 @@ def build_author_thesaurus(org_id: str, similariti_coefficient: float = 0.8, sur
     print("Assembling a thesaurus...")
     thesaurus = {}
     total = len(similarity)
+
+    for i in range(total):
+        if X['Authors'][i] in thesaurus:
+            continue
+            
+        if (i + 1) % 500 == 0:
+            print(f"Processed: {i+1}/{total}")
+            
+        for j in range(i+1, total):
+            if X['Authors'][j] in thesaurus:
+                continue
+                
+            if similarity[i][j] < similariti_coefficient:
+                continue
+                
+            # Checking initials
+            initials1 = X['Initials'][i].split('.')
+            initials2 = X['Initials'][j].split('.')
+            
+            if len(initials1) != len(initials2):
+                shorter, longer = sorted([initials1, initials2], key=len)
+                if shorter != longer[:len(shorter)]:
+                    continue
+            elif initials1 != initials2:
+                continue
+                
+            # Checking surnames
+            surname1, surname2 = X['Surnames'][i], X['Surnames'][j]
+            if abs(len(surname1) - len(surname2)) > surname_diff:
+                continue
+                
+            if (surname1[-1] == 'a') ^ (surname2[-1] == 'a'):  # XOR for checking male/female last name
+                continue
+                
+            thesaurus[X['Authors'][j]] = X['Authors'][i]
+    
