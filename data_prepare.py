@@ -40,6 +40,11 @@ def load_nodes(org_id: str) -> pd.DataFrame:
     return nodes
 
 
+def load_edges(org_id: str) -> pd.DataFrame:
+    return pd.read_csv(f'org_data/processed/{org_id}/network.txt', sep='\t',
+                         names=['first_author','second_author','weight'], header=None)
+
+
 def standardize_author_names(names: str, replace_dict: dict) -> list:
     arr_authors = [name.replace('et al.', '').strip() for name in names.split(';')]
     res = []
