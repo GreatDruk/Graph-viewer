@@ -18,6 +18,11 @@ def load_thesaurus(org_id: str) -> dict:
 
     return replace_dict
 
+
+def load_publication(org_id: str) -> pd.DataFrame:
+    return pd.read_csv(f'org_data/processed/{org_id}/publications.csv')
+
+
 def standardize_author_names(names: str, replace_dict: dict) -> list:
     arr_authors = [name.replace('et al.', '').strip() for name in names.split(';')]
     res = []
