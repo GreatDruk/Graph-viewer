@@ -19,3 +19,16 @@ def build_author_thesaurus(org_id: str, similariti_coefficient: float = 0.8, sur
         .str.endswith(('et al.', 'et al'))
     ]  # delete et al
     authors = authors.drop_duplicates().reset_index(drop=True)
+
+    X = pd.DataFrame({'Authors': authors})
+    X['Ready'] = authors.str.lower().str.replace(r'[^а-яa-zё .]', '', regex=True)
+
+    def transliterate_name(name):
+        if len(name) > 0:
+            if name[-1] == '.':
+                name = name[:-1]
+            arr = name.split()
+            name = arr[0] + ' ' + ''.join(arr[1:])
+        return translit(name, 'ru', reversed=True)
+
+    X['Ready'] = X['Ready'].apply(transliterate_name)
