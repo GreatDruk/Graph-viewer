@@ -51,3 +51,24 @@ def standardize_author_names(names: str, replace_dict: dict) -> list:
     for name in arr_authors:
         res.append(replace_dict.get(name, name).lower())
     return res
+
+
+def build_authors_with_inform(publication: pd.DataFrame, replace_dict: dict) -> pd.DataFrame:
+    df = (
+        publication.assign(
+            Authors = lambda df: df['Authors'].apply(
+                standardize_author_names,
+                replace_dict=replace_dict
+            )
+        )
+        .explode('Authors')
+        .groupby('Authors', as_index=False)
+        .agg({
+            'Title': list,
+            'Year': list,
+            'Source title': list,
+            'Cited by': list,
+            'Link': list
+        })
+    )
+    return df
