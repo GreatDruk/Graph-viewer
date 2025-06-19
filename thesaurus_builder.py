@@ -83,3 +83,12 @@ def build_author_thesaurus(org_id: str, similariti_coefficient: float = 0.8, sur
                 
             thesaurus[X['Authors'][j]] = X['Authors'][i]
     
+    
+    # Saving
+    print("Saving to a file...")
+    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+        f.write("Label\tReplace by\n")
+        for label, replace_by in thesaurus.items():
+            f.write(f"{label}\t{replace_by}\n")
+
+    print("Ready! The results are saved in", OUTPUT_FILE)
