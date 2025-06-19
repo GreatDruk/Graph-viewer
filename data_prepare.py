@@ -114,13 +114,164 @@ def wrap_text(txt: str, width: int = 50) -> str:
     return '<br>'.join(res)
 
 
-def id_to_name(ID: str, nodes: pd.DataFrame) -> pd.DataFrame:
-    return nodes.loc[nodes['id'] == ID, 'label'].iloc[0]
-
-
 def scale_coordinates(series: pd.Series, new_min: int = 0, new_max: int = 1000) -> pd.Series:
     old_min = series.min()
     old_max = series.max()
     return new_min + (series - old_min) * (new_max - new_min) / (old_max - old_min)
 
 
+def prepare_network_elements(org_id: str):
+    # Load data
+    replace_dict = load_thesaurus(org_id)
+    publication = load_publication(org_id)
+    nodes = load_nodes(org_id)
+    edges = load_edges(org_id)
+
+    # Build authors info
+    authors_info = build_authors_with_inform(publication, replace_dict)
+
+    # Build edge descriptions
+    edges['hover_text'] = edges.apply(
+        lambda row: build_description(row, nodes, authors_info), axis=1
+    )
+
+    # Convert IDs to names
+    edges['first_author'] = edges['first_author'].apply(
+        lambda ID: nodes.loc[nodes['id'] == ID, 'label'].iloc[0]
+    )
+    edges['second_author'] = edges['second_author'].apply(
+        lambda ID: nodes.loc[nodes['id'] == ID, 'label'].iloc[0]
+    )
+
+    # Impossible years
+    YEAR_NOW = datetime.now().year
+    nodes['Avg_pub_year'] = nodes['Avg_pub_year'].apply(
+        lambda x: x if x <= YEAR_NOW else YEAR_NOW
+    )
+
+    # Scaling coordinates
+    nodes['x'] = scale_coordinates(nodes['x'])
+    nodes['y'] = scale_coordinates(nodes['y'])
+
+    # Clusters to colors
+    COLORS = [
+        '#E87757', '#8DD4F6', '#F7A978', '#5E9DBE', '#AD9281', '#F9CD94',
+        '#CAD892', '#F0ACB7', '#A0BA46', '#EB5A6D', '#758D46', '#F2C6C7',
+        '#BDBDBD', '#83A061', '#EEADA7', '#80E3CD', '#E7A396', '#3C8782',
+        '#EBCFB2', '#BAB9E1', '#EACE84', '#CCCBF2', '#F9F4BC', '#F3C9E4',
+        '#FAF5AF', '#D9A1C0', '#969A60', '#F8E5EB', '#DDE48E', '#ED6C84',
+    ]
+    clusters = nodes['cluster'].unique()
+    cluster_colors_map = {}
+    for cl in clusters:
+        cluster_colors_map[cl] = COLORS[(cl-1) % len(COLORS)]
+    nodes['node_color'] = nodes['cluster'].map(cluster_colors_map)
+
+    # Build elements
+    nodes_records = nodes.to_dict('records')
+    edges_records = edges.to_dict('records')
+
+    node_color_map = nodes.set_index('label')['node_color'].to_dict()
+
+    nodes_elements = [
+        {
+            'data': {
+                'id': node['label'],
+                'label': node['label'],
+                'val': node['Links'],
+                'color': node['node_color'],
+            },
+            'position': {'x': node['x'], 'y': node['y']}
+        }
+        for node in nodes_records
+    ]
+    edges_elements = [
+        {
+            'data': {
+                'id': f"{edge['first_author']}-{edge['second_author']}",
+                'source': edge['first_author'],
+                'target': edge['second_author'],
+                'weight': edge['weight'],
+                'hover': edge['hover_text'],
+                'color': node_color_map[edge['first_author']]
+            },
+        }
+        for edge in edges_records
+    ]
+    elements = nodes_elements + edges_elements
+
+    # Initializing x range
+    X_MIN, X_MAX = nodes['x'].min(), nodes['x'].max()
+    initial_x_range = np.abs(X_MAX - X_MIN)
+    last_x_range = initial_x_range
+
+    val_min = nodes['Links'].min()
+    val_max = nodes['Links'].max()
+
+    basic_stylesheet = [
+        {
+            'selector': 'node',
+            'style': {
+                'width':  f'mapData(val, {val_min}, {val_max}, 10, 40)',
+                'height': f'mapData(val, {val_min}, {val_max}, 10, 40)',
+                'background-color': 'data(color)',
+                'label': 'data(label)',
+                'font-size': f'mapData(val, {val_min}, {val_max}, 7, 17)',
+                'opacity': 0.85,
+                'text-halign': 'center',
+                'text-valign': 'center',
+            }
+        },
+        {
+            'selector': 'edge',
+            'style': {
+                'width': '1',
+                'line-color': 'data(color)',
+                'opacity': 0.3,
+                'content': 'data(weight)',
+                'font-size': '6px',
+                'text-rotation': 'autorotate',
+                'text-background-color': '#fff',
+                'text-background-opacity': 0.9,
+                'text-background-shape': 'roundrectangle'
+            }
+        },
+    ]
+
+    # Option dictionaries
+    size_options = []
+    options = ['Links', 'Strength', 'Documents', 'Citations', 'Norm_citations']
+    options_label = {'Links': 'Количество связей',
+                    'Strength': 'Индекс связанности',
+                    'Documents': 'Число публикаций',
+                    'Citations': 'Число цитирований',
+                    'Norm_citations': 'Норм. цитирования'}
+    for col in nodes.columns:
+        if col in options:
+            size_options.append({'label': options_label[col], 'value': col})
+
+    metrics_bounds = {}
+    for col in options:
+        metrics_bounds[col] = {
+            'min': nodes[col].min(),
+            'max': nodes[col].max()
+        }
+
+    color_options = []
+    options = ['Avg_pub_year', 'Avg_citations', 'Avg_norm_citations']
+    options_label = {'Avg_pub_year': 'Ср. год публикаций',
+                    'Avg_citations': 'Ср. число цитирований',
+                    'Avg_norm_citations': 'Ср. норм. цитирования'}
+    for col in nodes.columns:
+        if col in options:
+            color_options.append({'label': options_label[col], 'value': col})
+    
+    return {
+        'elements': elements,
+        'stylesheet': basic_stylesheet,
+        'size_options': size_options,
+        'metrics_bounds': metrics_bounds,
+        'color_options': color_options,
+        'nodes': nodes,
+        'edges': edges
+    }
