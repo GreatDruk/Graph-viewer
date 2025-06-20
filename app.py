@@ -153,21 +153,21 @@ app.clientside_callback(
 
         // 5) Metrics:
         if(colorMetric) {
+            let minVal = vmin;
+            let maxVal = vmax;
+            if(minVal === null || minVal === undefined) {
+                minVal = sizeLimits[colorMetric].min;
+            }
+            if(maxVal === null || maxVal === undefined) {
+                maxVal = sizeLimits[colorMetric].max;
+            }
             graphStyle.push({
                 selector: 'node',
                 style: {
-                    'background-color': `mapData(${colorMetric}, ${vmin}, ${vmax}, blue, red)`
+                    'background-color': `mapData(${colorMetric}, ${minVal}, ${maxVal}, blue, red)`
                 }
             });
-        }
-
-        // 6) Min/max metric:
-        if(vmin != null && vmax != null) {
-            graphStyle.push({
-                selector: 'node',
-                style: { 'cmin': vmin, 'cmax': vmax }
-            });
-        }
+        };
 
         return graphStyle;
     }
@@ -235,6 +235,29 @@ app.clientside_callback(
     ],
     Input('color-button', 'n_clicks'),
     State('network-graph', 'stylesheet'),
+    prevent_initial_call=True
+)
+app.clientside_callback(
+    """
+    function(metric, nodeSize) {
+        if (!metric || !nodeSize || !nodeSize[metric]) {
+            return [window.dash_clientside.no_update, window.dash_clientside.no_update, window.dash_clientside.no_update];
+        }
+
+        const sizes = nodeSize[metric];
+        const vmin = Math.floor(sizes.min);
+        const vmax = Math.ceil(sizes.max);
+
+        return [vmin, vmax, {'vmin': vmin, 'vmax': vmax}];
+    }
+    """,
+    [
+        Output('node-color-min', 'value'),
+        Output('node-color-max', 'value'),
+        Output('node-color-limits', 'data'),
+    ],
+    Input('color-by-dropdown','value'),
+    State('size-limits', 'data'),
     prevent_initial_call=True
 )
 
