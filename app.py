@@ -96,7 +96,7 @@ app.layout = html.Div([
             boxSelectionEnabled=True,
             autounselectify=False,
             wheelSensitivity=0.15,
-            style = {'width': '100%', 'height': '100%'}
+            style = {'width': '100%', 'height': '100%', 'backgroundColor': '#f7f9ff'}
         )
     ], id='content__graph')
 ], id='content')
@@ -107,7 +107,7 @@ app.clientside_callback(
     function(sizeVal, edgeTh, person, showWeight, colorMetric, vmin, vmax, basic, sizeLimits) {
         let graphStyle = JSON.parse(JSON.stringify(basic));
 
-        // 1) ресайз вершин:
+        // 1) Update nodes:
         const bounds = sizeLimits[sizeVal];
         const VM = bounds.min;
         const VX = bounds.max;
@@ -122,7 +122,7 @@ app.clientside_callback(
             });
         };
 
-        // 2) фильтр рёбер:
+        // 2) Filter edges:
         graphStyle.push({
             selector: `edge[weight < ${edgeTh}]`,
             style: { display: 'none' }
@@ -132,7 +132,7 @@ app.clientside_callback(
             style: { display: 'element' }
         });
 
-        // 3) подсветка поиска:
+        // 3) Search:
         if(person) {
             const low = person.toLowerCase();
             graphStyle.push({
@@ -141,17 +141,17 @@ app.clientside_callback(
             });
             graphStyle.push({
                 selector: `node[label !*= "${low}"]`,
-                style: { 'background-color': 'data(color)' }
+                style: { 'background-color': '#b0daff' }
             });
         }
 
-        // 4) веса рёбер:
+        // 4) Show weights:
         graphStyle.push({
             selector: 'edge',
             style: { 'text-opacity': showWeight.length ? 1 : 0 }
         });
 
-        // 5) окраска по метрике:
+        // 5) Metrics:
         if(colorMetric) {
             graphStyle.push({
                 selector: 'node',
@@ -161,7 +161,7 @@ app.clientside_callback(
             });
         }
 
-        // 6) пороги цвета:
+        // 6) Min/max metric:
         if(vmin != null && vmax != null) {
             graphStyle.push({
                 selector: 'node',
@@ -186,6 +186,56 @@ app.clientside_callback(
         State('network-graph', 'stylesheet'),
         State('size-limits', 'data')
     ]
+)
+app.clientside_callback(
+    """
+    function(clickReset, basic) {
+        let graphStyle = JSON.parse(JSON.stringify(basic));
+
+        if(clickReset) {
+            graphStyle.push({
+                selector: `node[label]`,
+                style: { 'background-color': 'data(color)' }
+            });
+            return [graphStyle, ''];
+        }
+        return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+    }
+    """,
+    [
+        Output('network-graph', 'stylesheet', allow_duplicate=True),
+        Output('person-search', 'value'),
+    ],
+    Input('reset-button', 'n_clicks'),
+    State('network-graph', 'stylesheet'),
+    prevent_initial_call=True
+)
+app.clientside_callback(
+    """
+    function(clickColor, basic) {
+        if (!clickColor) {
+            return [window.dash_clientside.no_update, window.dash_clientside.no_update, window.dash_clientside.no_update, window.dash_clientside.no_update];
+        }
+        let graphStyle = JSON.parse(JSON.stringify(basic));
+        if (clickColor % 2 == 1) {
+            return [graphStyle, {'display': 'block'}, {'display': 'flex'}, ''];
+        }
+        graphStyle.push({
+            selector: `node[label]`,
+            style: { 'background-color': 'data(color)' }
+        });
+        return [graphStyle, {'display': 'none'}, {'display': 'none'}, ''];
+    }
+    """,
+    [
+        Output('network-graph', 'stylesheet', allow_duplicate=True),
+        Output('color-by-container', 'style'),
+        Output('color-thresholds-container', 'style'),
+        Output('color-by-dropdown', 'value'),
+    ],
+    Input('color-button', 'n_clicks'),
+    State('network-graph', 'stylesheet'),
+    prevent_initial_call=True
 )
 
 
