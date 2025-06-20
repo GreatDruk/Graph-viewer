@@ -97,14 +97,18 @@ app.layout = html.Div([
             autounselectify=False,
             wheelSensitivity=0.15,
             style = {'width': '100%', 'height': '100%', 'backgroundColor': '#f7f9ff'}
-        )
+        ),
+        html.Div([
+            html.Div(id='legend-bar'),
+            html.Div(id='legend-labels')
+        ], id='color-legend')
     ], id='content__graph')
 ], id='content')
 
 
 app.clientside_callback(
     """
-    function(sizeVal, edgeTh, person, showWeight, colorMetric, vmin, vmax, basic, sizeLimits) {
+    function(sizeVal, edgeTh, person, showWeight, colorMetric, vmin, vmax, basic, sizeLimits, limitsStore) {
         let graphStyle = JSON.parse(JSON.stringify(basic));
 
         // 1) Update nodes:
@@ -153,20 +157,27 @@ app.clientside_callback(
 
         // 5) Metrics:
         if(colorMetric) {
-            let minVal = vmin;
-            let maxVal = vmax;
-            if(minVal === null || minVal === undefined) {
-                minVal = sizeLimits[colorMetric].min;
+            let minVal = sizeLimits[colorMetric].min;
+            let maxVal = sizeLimits[colorMetric].max;
+
+            minVal = Math.max(minVal, vmin);
+            maxVal = Math.min(maxVal, vmax);
+
+            if (minVal <= maxVal) {
+                const midVal = (minVal + maxVal) / 2;
+                graphStyle.push({
+                    selector: `node[${colorMetric} <= ${midVal}]`,
+                    style: {
+                        'background-color': `mapData(${colorMetric}, ${minVal}, ${midVal}, #440154, #26828E)`
+                    }
+                });
+                graphStyle.push({
+                    selector: `node[${colorMetric} > ${midVal}]`,
+                    style: {
+                        'background-color': `mapData(${colorMetric}, ${midVal}, ${maxVal}, #26828E, #FDE725)`
+                    }
+                });
             }
-            if(maxVal === null || maxVal === undefined) {
-                maxVal = sizeLimits[colorMetric].max;
-            }
-            graphStyle.push({
-                selector: 'node',
-                style: {
-                    'background-color': `mapData(${colorMetric}, ${minVal}, ${maxVal}, blue, red)`
-                }
-            });
         };
 
         return graphStyle;
@@ -184,7 +195,8 @@ app.clientside_callback(
     ],
     [
         State('network-graph', 'stylesheet'),
-        State('size-limits', 'data')
+        State('size-limits', 'data'),
+        State('node-color-limits','data'),
     ]
 )
 app.clientside_callback(
@@ -258,6 +270,35 @@ app.clientside_callback(
     ],
     Input('color-by-dropdown','value'),
     State('size-limits', 'data'),
+    prevent_initial_call=True
+)
+app.clientside_callback(
+    """
+    function(colorMetric, vmin, vmax) {
+        if (!colorMetric || vmin == null || vmax == null) {
+            return [{'display': 'none'}, window.dash_clientside.no_update];
+        }
+        const mid = (vmin + vmax) / 2;
+        const legendStyle = {
+            'display': 'block',
+        };
+        const labels = [
+            window.React.createElement('span', {children: `${vmin}`}),
+            window.React.createElement('span', {children: `${mid}`}),
+            window.React.createElement('span', {children: `${vmax}`})
+        ];
+        return [legendStyle, labels];
+    }
+    """,
+    [
+        Output('color-legend', 'style'),
+        Output('legend-labels', 'children'),
+    ],
+    [
+        Input('color-by-dropdown', 'value'),
+        Input('node-color-min', 'value'),
+        Input('node-color-max', 'value'),
+    ],
     prevent_initial_call=True
 )
 
