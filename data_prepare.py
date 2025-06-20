@@ -184,6 +184,9 @@ def prepare_network_elements(org_id: str):
                 'Documents': node['Documents'],
                 'Citations': node['Citations'],
                 'Norm_citations': node['Norm_citations'],
+                'Avg_pub_year': node['Avg_pub_year'],
+                'Avg_citations': node['Avg_citations'],
+                'Avg_norm_citations': node['Avg_norm_citations'],
                 'color': node['node_color'],
             },
             'position': {'x': node['x'], 'y': node['y']}
@@ -270,6 +273,12 @@ def prepare_network_elements(org_id: str):
     for col in nodes.columns:
         if col in options:
             color_options.append({'label': options_label[col], 'value': col})
+
+    for col in options:
+        metrics_bounds[col] = {
+            'min': nodes[col].min(),
+            'max': nodes[col].max()
+        }
     
     return {
         'elements': elements,
