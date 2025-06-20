@@ -179,6 +179,11 @@ def prepare_network_elements(org_id: str):
                 'id': node['label'],
                 'label': node['label'],
                 'val': node['Links'],
+                'Links': node['Links'],
+                'Strength': node['Strength'],
+                'Documents': node['Documents'],
+                'Citations': node['Citations'],
+                'Norm_citations': node['Norm_citations'],
                 'color': node['node_color'],
             },
             'position': {'x': node['x'], 'y': node['y']}
