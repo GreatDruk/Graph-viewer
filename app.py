@@ -136,26 +136,13 @@ app.clientside_callback(
             style: { display: 'element' }
         });
 
-        // 3) Search:
-        if(person) {
-            const low = person.toLowerCase();
-            graphStyle.push({
-                selector: `node[label *= "${low}"]`,
-                style: { 'background-color': 'red' }
-            });
-            graphStyle.push({
-                selector: `node[label !*= "${low}"]`,
-                style: { 'background-color': '#b0daff' }
-            });
-        }
-
-        // 4) Show weights:
+        // 3) Show weights:
         graphStyle.push({
             selector: 'edge',
             style: { 'text-opacity': showWeight.length ? 1 : 0 }
         });
 
-        // 5) Metrics:
+        // 4) Metrics:
         if(colorMetric) {
             let minVal = sizeLimits[colorMetric].min;
             let maxVal = sizeLimits[colorMetric].max;
@@ -177,8 +164,29 @@ app.clientside_callback(
                         'background-color': `mapData(${colorMetric}, ${midVal}, ${maxVal}, #26828E, #FDE725)`
                     }
                 });
+                graphStyle.push({
+                    selector: `node[${colorMetric} < ${vmin}]`,
+                    style: { 'background-color': '#d7ecff' }
+                });
+                graphStyle.push({
+                    selector: `node[${colorMetric} > ${vmax}]`,
+                    style: { 'background-color': '#d7ecff' }
+                });
             }
         };
+
+        // 5) Search:
+        if(person) {
+            const low = person.toLowerCase();
+            graphStyle.push({
+                selector: `node[label *= "${low}"]`,
+                style: { 'background-color': 'red' }
+            });
+            graphStyle.push({
+                selector: `node[label !*= "${low}"]`,
+                style: { 'background-color': '#b0daff' }
+            });
+        }
 
         return graphStyle;
     }
