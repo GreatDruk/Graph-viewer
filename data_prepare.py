@@ -235,12 +235,13 @@ def prepare_network_elements(org_id: str):
             'style': {
                 'width': '1',
                 'line-color': 'data(color)',
-                'opacity': 0.3,
-                'content': 'data(weight)',
+                'line-opacity': 0.3,
+                'opacity': 0.7,
+                'label': 'data(weight)',
                 'font-size': '6px',
                 'text-rotation': 'autorotate',
                 'text-background-color': '#fff',
-                'text-background-opacity': 0.9,
+                'text-background-opacity': 0.6,
                 'text-background-shape': 'roundrectangle'
             }
         },
