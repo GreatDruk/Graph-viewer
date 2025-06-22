@@ -179,9 +179,31 @@ input {
   display: none;
   position: absolute;
   z-index: 3;
-  left: 50px;
+  left: 30px;
   bottom: 30px;
   width: 300px;
   padding: 10px 10px 6px;
   background-color: #FFF;
+}
+#hover-tooltip {
+  display: none;
+  position: absolute;
+  left: 30px;
+  top: 10px;
+  background-color: #FFF;
+  border-radius: 4px;
+  z-index: 3;
+  padding: 10px 0 10px 15px;
+  width: 300px;
+  flex-direction: column;
+}
+#hover-tooltip span {
+  margin-bottom: 5px;
+}
+#hover-tooltip span:first-child {
+  text-transform: capitalize;
+  font-weight: 600;
+}
+#hover-tooltip span:last-child {
+  margin-bottom: 0;
 }
