@@ -317,9 +317,11 @@ app.clientside_callback(
             const name = mouseoverData.label || '';
             const val = mouseoverData[sizeVal] || '0';
             const label = sizeOptions.find(o => o.value === sizeVal)?.label || 'None';
+            const cluster = mouseoverData.cluster;
             const description = [
                 window.React.createElement('span', {}, name),
-                window.React.createElement('span', {}, `${label}: ${val}`)
+                window.React.createElement('span', {}, `${label}: ${val}`),
+                window.React.createElement('span', {}, `Кластер: ${cluster}`)
             ];
             return [
                 {
