@@ -91,14 +91,11 @@ def build_description(row, nodes: pd.DataFrame, authors_with_inform: pd.DataFram
     res = []
     for number, inform in enumerate(common[:max_display], 1):
         res.append(f"{number}. {inform[0]}, {inform[1]}")
-    total = len(common)
-    if total > max_display:
-        res.append(f"\nи ещё {total - max_display} совместных работ.")
-    return '<br>'.join(res)
+    return '\n\n'.join(res)
 
 
 def wrap_text(txt: str, width: int = 50) -> str:
-    sentences = txt.split('<br>')
+    sentences = txt.split('\n\n')
     res = []
     for sentence in sentences:
         words = sentence.split(' ')
@@ -110,8 +107,8 @@ def wrap_text(txt: str, width: int = 50) -> str:
             else:
                 cur = f"{cur} {w}".strip()
         lines.append(cur)
-        res.append('<br>'.join(lines))
-    return '<br>'.join(res)
+        res.append('\n\n'.join(lines))
+    return '\n\n'.join(res)
 
 
 def scale_coordinates(series: pd.Series, new_min: int = 0, new_max: int = 1000) -> pd.Series:
