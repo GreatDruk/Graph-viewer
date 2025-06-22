@@ -111,7 +111,7 @@ def wrap_text(txt: str, width: int = 50) -> str:
     return '\n\n'.join(res)
 
 
-def scale_coordinates(series: pd.Series, new_min: int = 0, new_max: int = 1000) -> pd.Series:
+def scale_coordinates(series: pd.Series, new_min: int = 0, new_max: int = 2000) -> pd.Series:
     old_min = series.min()
     old_max = series.max()
     return new_min + (series - old_min) * (new_max - new_min) / (old_max - old_min)
