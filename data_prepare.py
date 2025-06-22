@@ -206,11 +206,6 @@ def prepare_network_elements(org_id: str):
     ]
     elements = nodes_elements + edges_elements
 
-    # Initializing x range
-    X_MIN, X_MAX = nodes['x'].min(), nodes['x'].max()
-    initial_x_range = np.abs(X_MAX - X_MIN)
-    last_x_range = initial_x_range
-
     val_min = nodes['Links'].min()
     val_max = nodes['Links'].max()
 
