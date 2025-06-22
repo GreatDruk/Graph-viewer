@@ -342,6 +342,37 @@ app.clientside_callback(
     State('size-dropdown', 'options'),
     prevent_initial_call=True
 )
+app.clientside_callback(
+    """
+    function(edgeData) {
+        if (edgeData) {
+            const from = edgeData.source || '';
+            const to = edgeData.target || '';
+            const label = `${from} — ${to}`;
+            const weight = `Совместных работ: ${edgeData.weight}`;
+            const hoverText = edgeData.hover || '';
+            const description = [
+                window.React.createElement('span', {}, label),
+                window.React.createElement('span', {}, weight),
+                window.React.createElement('span', {style: {'marginTop': '10px'}}, hoverText)
+            ];
+            return [
+                {
+                    'display': 'flex',
+                },
+                description
+            ];
+        }
+        return [{'display': 'none'}, ''];
+    }
+    """,
+    [
+        Output('hover-tooltip', 'style', allow_duplicate=True),
+        Output('hover-tooltip', 'children', allow_duplicate=True)
+    ],
+    Input('network-graph', 'tapEdgeData'),
+    prevent_initial_call=True
+)
 
 
 # START
