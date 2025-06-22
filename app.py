@@ -40,6 +40,23 @@ app.layout = html.Div([
             )
         ], id='content__filter_edge'),
         html.Div([
+            html.Div(f'Кластеров: {nodes['cluster'].max()}', id='content__cluster-info'),
+            html.Label('Поиск кластера:'),
+            html.Div([
+                dcc.Input(
+                    id='cluster-filter',
+                    type='number',
+                    min=int(nodes['cluster'].min()),
+                    max=int(nodes['cluster'].max()),
+                    placeholder='Введите номер',
+                    debounce=True
+                )
+            ], id='content__cluster-search', className='search__input'),
+            html.Div([
+                html.Button('', id = 'cluster-button', className='search__button-item', n_clicks = 0)
+            ], id='content__cluster-button', className='search__button')
+        ], id='content__cluster', className='search'),
+        html.Div([
             html.Label('Поиск автора:'),
             html.Div([
                 dcc.Input(
@@ -48,11 +65,11 @@ app.layout = html.Div([
                     placeholder = 'иванов и.и.',
                     debounce = True
                 )
-            ], id='content__input-search'),
+            ], id='content__input-search', className='search__input'),
             html.Div([
-                html.Button('', id = 'search-button', n_clicks = 0)
-            ], id='content__search-button')
-        ], id='content__search'),
+                html.Button('', id = 'search-button', className='search__button-item', n_clicks = 0)
+            ], id='content__search-button', className='search__button')
+        ], id='content__search', className='search'),
         html.Div([
             html.Button("Сбросить поиск", id = "reset-button", n_clicks = 0)
         ], id='content__reset'),
@@ -109,7 +126,7 @@ app.layout = html.Div([
 
 app.clientside_callback(
     """
-    function(sizeVal, edgeTh, person, showWeight, colorMetric, vmin, vmax, basic, sizeLimits, limitsStore) {
+    function(sizeVal, edgeTh, person, showWeight, clusterFilter, colorMetric, vmin, vmax, basic, sizeLimits, limitsStore) {
         let graphStyle = JSON.parse(JSON.stringify(basic));
 
         // 1) Update nodes:
@@ -189,6 +206,18 @@ app.clientside_callback(
             });
         }
 
+        // 6) Filter cluster:
+        if(clusterFilter) {
+            graphStyle.push({
+                selector: `node[cluster = ${clusterFilter}]`,
+                style: { 'background-color': 'red' }
+            });
+            graphStyle.push({
+                selector: `node[cluster != ${clusterFilter}]`,
+                style: { 'background-color': '#b0daff' }
+            });
+        }
+
         return graphStyle;
     }
     """,
@@ -198,6 +227,7 @@ app.clientside_callback(
       Input('edge-threshold', 'value'),
       Input('person-search', 'value'),
       Input('show-weights', 'value'),
+      Input('cluster-filter', 'value'),
       Input('color-by-dropdown', 'value'),
       Input('node-color-min', 'value'),
       Input('node-color-max', 'value'),
@@ -218,14 +248,15 @@ app.clientside_callback(
                 selector: `node[label]`,
                 style: { 'background-color': 'data(color)' }
             });
-            return [graphStyle, ''];
+            return [graphStyle, '', ''];
         }
-        return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+        return [window.dash_clientside.no_update, window.dash_clientside.no_update, window.dash_clientside.no_update];
     }
     """,
     [
         Output('network-graph', 'stylesheet', allow_duplicate=True),
         Output('person-search', 'value'),
+        Output('cluster-filter', 'value'),
     ],
     Input('reset-button', 'n_clicks'),
     State('network-graph', 'stylesheet'),
