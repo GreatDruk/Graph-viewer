@@ -188,6 +188,7 @@ def prepare_network_elements(org_id: str):
                 'Avg_citations': node['Avg_citations'],
                 'Avg_norm_citations': node['Avg_norm_citations'],
                 'color': node['node_color'],
+                'cluster': node['cluster'],
             },
             'position': {'x': node['x'], 'y': node['y']}
         }
