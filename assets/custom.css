@@ -196,13 +196,16 @@ input {
   padding: 10px 0 10px 15px;
   width: 300px;
   flex-direction: column;
+  font-size: 15px;
 }
 #hover-tooltip span {
-  margin-bottom: 5px;
+  margin-bottom: 3px;
 }
 #hover-tooltip span:first-child {
   text-transform: capitalize;
   font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 8px;
 }
 #hover-tooltip span:last-child {
   margin-bottom: 0;
