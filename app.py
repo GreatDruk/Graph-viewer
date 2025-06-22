@@ -101,7 +101,8 @@ app.layout = html.Div([
         html.Div([
             html.Div(id='legend-bar'),
             html.Div(id='legend-labels')
-        ], id='color-legend')
+        ], id='color-legend'),
+        html.Div(id='hover-tooltip')
     ], id='content__graph')
 ], id='content')
 
@@ -307,6 +308,36 @@ app.clientside_callback(
         Input('node-color-min', 'value'),
         Input('node-color-max', 'value'),
     ],
+    prevent_initial_call=True
+)
+app.clientside_callback(
+    """
+    function(mouseoverData, sizeVal, sizeOptions) {
+        if (mouseoverData) {
+            const name = mouseoverData.label || '';
+            const val = mouseoverData[sizeVal] || '0';
+            const label = sizeOptions.find(o => o.value === sizeVal)?.label || 'None';
+            const description = [
+                window.React.createElement('span', {}, name),
+                window.React.createElement('span', {}, `${label}: ${val}`)
+            ];
+            return [
+                {
+                    'display': 'flex',
+                },
+                description
+            ];
+        }
+        return [{'display': 'none'}, ''];
+    }
+    """,
+    [
+        Output('hover-tooltip', 'style'),
+        Output('hover-tooltip', 'children')
+    ],
+    Input('network-graph', 'mouseoverNodeData'),
+    Input('size-dropdown', 'value'),
+    State('size-dropdown', 'options'),
     prevent_initial_call=True
 )
 
