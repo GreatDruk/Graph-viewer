@@ -126,7 +126,7 @@ app.layout = html.Div([
 
 app.clientside_callback(
     """
-    function(sizeVal, edgeTh, person, showWeight, clusterFilter, colorMetric, vmin, vmax, basic, sizeLimits, limitsStore) {
+    function(sizeVal, edgeTh, person, showWeight, colorMetric, vmin, vmax, basic, sizeLimits, limitsStore) {
         let graphStyle = JSON.parse(JSON.stringify(basic));
 
         // 1) Update nodes:
@@ -206,18 +206,6 @@ app.clientside_callback(
             });
         }
 
-        // 6) Filter cluster:
-        if(clusterFilter) {
-            graphStyle.push({
-                selector: `node[cluster = ${clusterFilter}]`,
-                style: { 'background-color': 'red' }
-            });
-            graphStyle.push({
-                selector: `node[cluster != ${clusterFilter}]`,
-                style: { 'background-color': '#b0daff' }
-            });
-        }
-
         return graphStyle;
     }
     """,
@@ -227,7 +215,6 @@ app.clientside_callback(
       Input('edge-threshold', 'value'),
       Input('person-search', 'value'),
       Input('show-weights', 'value'),
-      Input('cluster-filter', 'value'),
       Input('color-by-dropdown', 'value'),
       Input('node-color-min', 'value'),
       Input('node-color-max', 'value'),
@@ -237,6 +224,42 @@ app.clientside_callback(
         State('size-limits', 'data'),
         State('node-color-limits','data'),
     ]
+)
+app.clientside_callback(
+    """
+    function(clusterValue, elements, basic) {
+        if (clusterValue === null || clusterValue === '') {
+            return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+        }
+        const clusterNum = Number(clusterValue);
+        let graphStyle = JSON.parse(JSON.stringify(basic));
+        const updated = JSON.parse(JSON.stringify(elements));
+        for (let el of updated) {
+            if (el.data && el.data.cluster !== undefined) {
+                el.selected = (el.data.cluster === clusterNum);
+            }
+        }
+        graphStyle.push({
+            selector: `node[cluster = ${clusterValue}]`,
+            style: { 'background-color': 'red' }
+        });
+        graphStyle.push({
+            selector: `node[cluster != ${clusterValue}]`,
+            style: { 'background-color': '#b0daff' }
+        });
+        return [graphStyle, updated];
+    }
+    """,
+    [
+        Output('network-graph', 'stylesheet', allow_duplicate=True),
+        Output('network-graph', 'elements'),
+    ],
+    Input('cluster-filter', 'value'),
+    [
+        State('network-graph', 'elements'),
+        State('network-graph', 'stylesheet'),
+    ],
+    prevent_initial_call=True
 )
 app.clientside_callback(
     """
