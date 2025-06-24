@@ -3,7 +3,7 @@ from dash import Dash, dcc, html, Input, Output, State
 import dash_cytoscape as cyto
 
 # DATA LOADING
-org_id = "14346"
+org_id = "12345"
 data = prepare_network_elements(org_id)
 
 elements = data['elements']
@@ -126,20 +126,20 @@ app.layout = html.Div([
 
 app.clientside_callback(
     """
-    function(sizeVal, edgeTh, person, showWeight, colorMetric, vmin, vmax, basic, sizeLimits, limitsStore) {
+    function(sizeValue, edgeTh, person, showWeight, colorMetric, vmin, vmax, basic, sizeLimits, limitsStore) {
         let graphStyle = JSON.parse(JSON.stringify(basic));
 
         // 1) Update nodes:
-        const bounds = sizeLimits[sizeVal];
+        const bounds = sizeLimits[sizeValue];
         const VM = bounds.min;
         const VX = bounds.max;
-        if(sizeVal && VM != null && VX != null) {
+        if(sizeValue && VM != null && VX != null) {
             graphStyle.push({
-                selector: `node[${sizeVal}]`,
+                selector: `node[${sizeValue}]`,
                 style: {
-                    'width': `mapData(${sizeVal}, ${VM}, ${VX}, 10, 40)`,
-                    'height': `mapData(${sizeVal}, ${VM}, ${VX}, 10, 40)`,
-                    'font-size': `mapData(${sizeVal}, ${VM}, ${VX}, 7, 17)`
+                    'width': `mapData(${sizeValue}, ${VM}, ${VX}, 10, 40)`,
+                    'height': `mapData(${sizeValue}, ${VM}, ${VX}, 10, 40)`,
+                    'font-size': `mapData(${sizeValue}, ${VM}, ${VX}, 7, 17)`
                 }
             });
         };
@@ -366,11 +366,11 @@ app.clientside_callback(
 )
 app.clientside_callback(
     """
-    function(mouseoverData, sizeVal, sizeOptions) {
+    function(mouseoverData, sizeValue, sizeOptions) {
         if (mouseoverData) {
             const name = mouseoverData.label || '';
-            const val = mouseoverData[sizeVal] || '0';
-            const label = sizeOptions.find(o => o.value === sizeVal)?.label || 'None';
+            const val = mouseoverData[sizeValue] || '0';
+            const label = sizeOptions.find(o => o.value === sizeValue)?.label || 'None';
             const cluster = mouseoverData.cluster;
             const description = [
                 window.React.createElement('span', {}, name),
@@ -431,4 +431,4 @@ app.clientside_callback(
 
 # START
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
