@@ -7,10 +7,8 @@ def build_author_thesaurus(org_id: str, similariti_coefficient: float = 0.8, sur
     INPUT_FILE = f"org_data/processed/{org_id}/publications.csv"
     OUTPUT_FILE = f"org_data/processed/{org_id}/thesaurus_authors.txt"
 
-    print("Uploading data...")
     df = pd.read_csv(INPUT_FILE)
 
-    print("Author processing...")
     authors = df['Authors'].dropna()
     authors = authors.str.split('; ').explode()  # separation authors
     authors = authors[
@@ -38,22 +36,17 @@ def build_author_thesaurus(org_id: str, similariti_coefficient: float = 0.8, sur
     X['Initials'] = X['Ready'].apply(lambda x: x.split()[1] if len(x.split()) > 1 else '')
 
     # Algorithm for searching for similar surnames
-    print("Searching for similar surnames...")
     vectorizer = TfidfVectorizer(analyzer='char', ngram_range=(1, 2))  # ngram_range an be changed
     matrix = vectorizer.fit_transform(X['Surnames'])
     similarity = cosine_similarity(matrix)
 
     # Assembling a thesaurus
-    print("Assembling a thesaurus...")
     thesaurus = {}
     total = len(similarity)
 
     for i in range(total):
         if X['Authors'][i] in thesaurus:
             continue
-            
-        if (i + 1) % 500 == 0:
-            print(f"Processed: {i+1}/{total}")
             
         for j in range(i+1, total):
             if X['Authors'][j] in thesaurus:
@@ -85,10 +78,7 @@ def build_author_thesaurus(org_id: str, similariti_coefficient: float = 0.8, sur
     
     
     # Saving
-    print("Saving to a file...")
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write("Label\tReplace by\n")
         for label, replace_by in thesaurus.items():
             f.write(f"{label}\t{replace_by}\n")
-
-    print("Ready! The results are saved in", OUTPUT_FILE)
