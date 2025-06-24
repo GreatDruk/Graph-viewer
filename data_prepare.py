@@ -1,9 +1,41 @@
 from thesaurus_builder import build_author_thesaurus
 
 import pandas as pd
-import numpy as np
 import os.path
+import pickle
 from datetime import datetime
+
+def get_source_paths(org_id: str):
+    base_path = f"org_data/processed/{org_id}"
+    return {
+        'thesaurus': os.path.join(base_path, "thesaurus_authors.txt"),
+        'publications': os.path.join(base_path, "publications.csv"),
+        'nodes': os.path.join(base_path, "map.txt"),
+        'edges': os.path.join(base_path, "network.txt"),
+    }
+
+
+def is_cache(cache_path: str, source_paths: dict) -> bool:
+    if not os.path.exists(cache_path):
+        return False
+
+    for p in source_paths.values():
+        if not os.path.exists(p):
+            return False
+
+    return True
+
+
+def load_cache(cache_path: str):
+    with open(cache_path, 'rb') as f:
+        return pickle.load(f)
+
+
+def save_cache(cache_path: str, data):
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    with open(cache_path, 'wb') as f:
+        pickle.dump(data, f)
+
 
 def load_thesaurus(org_id: str) -> dict:
     thesaurus_path = f"org_data/processed/{org_id}/thesaurus_authors.txt"
@@ -118,6 +150,15 @@ def scale_coordinates(series: pd.Series, new_min: int = 0, new_max: int = 2000) 
 
 
 def prepare_network_elements(org_id: str):
+    # Cache
+    source_paths = get_source_paths(org_id)
+    cache_path = f"org_data/processed/{org_id}/cache.pkl"
+    if is_cache(cache_path, source_paths):
+        try:
+            return load_cache(cache_path)
+        except Exception:
+            pass
+
     # Load data
     replace_dict = load_thesaurus(org_id)
     publication = load_publication(org_id)
@@ -274,7 +315,7 @@ def prepare_network_elements(org_id: str):
             'max': nodes[col].max()
         }
     
-    return {
+    result = {
         'elements': elements,
         'stylesheet': basic_stylesheet,
         'size_options': size_options,
@@ -283,3 +324,10 @@ def prepare_network_elements(org_id: str):
         'nodes': nodes,
         'edges': edges
     }
+    
+    try:
+        save_cache(cache_path, result)
+    except Exception:
+        pass
+    
+    return result
