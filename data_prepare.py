@@ -103,6 +103,10 @@ def build_authors_with_inform(publication: pd.DataFrame, replace_dict: dict) -> 
             'Link': list
         })
     )
+
+    df['First_pub_year'] = df['Year'].apply(lambda yrs: min(yrs) if yrs else None)
+    df['Last_pub_year'] = df['Year'].apply(lambda yrs: max(yrs) if yrs else None)
+
     return df
 
 
@@ -165,8 +169,9 @@ def prepare_network_elements(org_id: str):
     nodes = load_nodes(org_id)
     edges = load_edges(org_id)
 
-    # Build authors info
+    # Build authors info and years map
     authors_info = build_authors_with_inform(publication, replace_dict)
+    years_map = authors_info.set_index('Authors')[['First_pub_year', 'Last_pub_year']].to_dict('index')
 
     # Build edge descriptions
     edges['hover_text'] = edges.apply(
@@ -205,6 +210,10 @@ def prepare_network_elements(org_id: str):
         cluster_colors_map[cl] = COLORS[(cl-1) % len(COLORS)]
     nodes['node_color'] = nodes['cluster'].map(cluster_colors_map)
 
+    # Append first and last pub years
+    nodes['First_pub_year'] = nodes['label'].map(lambda lbl: years_map.get(lbl, {}).get('First_pub_year'))
+    nodes['Last_pub_year']  = nodes['label'].map(lambda lbl: years_map.get(lbl, {}).get('Last_pub_year'))
+
     # Build elements
     nodes_records = nodes.to_dict('records')
     edges_records = edges.to_dict('records')
@@ -223,6 +232,8 @@ def prepare_network_elements(org_id: str):
                 'Citations': node['Citations'],
                 'Norm_citations': node['Norm_citations'],
                 'Avg_pub_year': node['Avg_pub_year'],
+                'First_pub_year': node['First_pub_year'],
+                'Last_pub_year': node['Last_pub_year'],
                 'Avg_citations': node['Avg_citations'],
                 'Avg_norm_citations': node['Avg_norm_citations'],
                 'color': node['node_color'],
@@ -301,13 +312,14 @@ def prepare_network_elements(org_id: str):
         }
 
     color_options = []
-    options = ['Avg_pub_year', 'Avg_citations', 'Avg_norm_citations']
+    options = ['Avg_pub_year', 'First_pub_year', 'Last_pub_year', 'Avg_citations', 'Avg_norm_citations']
     options_label = {'Avg_pub_year': 'Ср. год публикаций',
+                    'First_pub_year': 'Год первой публикации',
+                    'Last_pub_year': 'Год последней публикации',
                     'Avg_citations': 'Ср. число цитирований',
                     'Avg_norm_citations': 'Ср. норм. цитирования'}
-    for col in nodes.columns:
-        if col in options:
-            color_options.append({'label': options_label[col], 'value': col})
+    for col in options:
+        color_options.append({'label': options_label[col], 'value': col})
 
     for col in options:
         metrics_bounds[col] = {
