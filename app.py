@@ -1,129 +1,374 @@
 from data_prepare import prepare_network_elements
 from dash import Dash, dcc, html, Input, Output, State
 import dash_cytoscape as cyto
+import os
+import pandas as pd
 
-# DATA LOADING
-org_id = "12345"
-data = prepare_network_elements(org_id)
-
-elements = data['elements']
-basic_stylesheet = data['stylesheet']
-size_options = data['size_options']
-metrics_bounds = data['metrics_bounds']
-color_options = data['color_options']
-nodes = data['nodes']
-edges = data['edges']
-
+DEFAULT_ORG = '14346'
 
 # DASH
 app = Dash(__name__, suppress_callback_exceptions=True)
+
+
+def base_layout(org_map):
+    # DATA LOADING
+    # Load default organization
+    data = prepare_network_elements(DEFAULT_ORG)
+
+    elements = data['elements']
+    basic_stylesheet = data['stylesheet']
+    size_options = data['size_options']
+    metrics_bounds = data['metrics_bounds']
+    color_options = data['color_options']
+    nodes = data['nodes']
+    edges = data['edges']
+
+    return html.Div([
+        # Stores
+        dcc.Store(id='current-org', data=DEFAULT_ORG),
+        dcc.Store(id='overlay-visible', data=True),
+
+        # Main container
+        html.Div([
+            # Content
+            html.Div([
+                # Sidebar
+                html.Div([
+                    # Select organization
+                    html.Div(['Университет Иннополис'], id='content__name_org'),
+                    html.Button('Сменить организацию', id='open-overlay-button', n_clicks=0),
+
+                    # Resize nodes
+                    html.Div([
+                        html.Label('Размер вершин:'),
+                        dcc.Dropdown(
+                            id='size-dropdown',
+                            options=size_options,
+                            value=size_options[0]['value']
+                        )
+                    ], id='content__size'),
+
+                    # Weight threshold
+                    html.Div([
+                        html.Label('Минимальный вес ребра:'),
+                        dcc.Input(
+                            id='edge-threshold',
+                            type='number',
+                            min=int(edges['weight'].min()),
+                            max=int(edges['weight'].max()),
+                            step=1,
+                            value=int(edges['weight'].min()),
+                        )
+                    ], id='content__filter_edge'),
+
+                    # Cluster search
+                    html.Div([
+                        html.Div(f'Кластеров: {nodes['cluster'].max()}', id='content__cluster-info'),
+
+                        html.Label('Поиск кластера:'),
+                        html.Div([
+                            dcc.Input(
+                                id='cluster-filter',
+                                type='number',
+                                min=int(nodes['cluster'].min()),
+                                max=int(nodes['cluster'].max()),
+                                placeholder='Введите номер',
+                                debounce=True
+                            )
+                        ], id='content__cluster-search', className='search__input'),
+
+                        html.Div([
+                            html.Button('', id='cluster-button', className='search__button-item', n_clicks=0)
+                        ], id='content__cluster-button', className='search__button')
+                    ], id='content__cluster', className='search'),
+
+                    # Author search
+                    html.Div([
+                        html.Label('Поиск автора:'),
+                        html.Div([
+                            dcc.Input(
+                                id='person-search',
+                                type='text',
+                                placeholder='иванов и.и.',
+                                debounce=True
+                            )
+                        ], id='content__input-search', className='search__input'),
+
+                        html.Div([
+                            html.Button('', id='search-button', className='search__button-item', n_clicks=0)
+                        ], id='content__search-button', className='search__button')
+                    ], id='content__search', className='search'),
+
+                    # Reset search
+                    html.Div([
+                        html.Button('Сбросить поиск', id='reset-button', n_clicks=0)
+                    ], id='content__reset'),
+
+                    # Show weights
+                    html.Div([
+                        dcc.Checklist(
+                            id='show-weights',
+                            options=[{'label': 'Показывать веса рёбер', 'value': 'show'}],
+                            value=['show'],
+                            labelStyle={'display': 'flex'}
+                        ),
+                    ], id='content__checkbox'),
+
+                    # Metrics
+                    html.Div([
+                        html.Button('Анализ по метрике', id='color-button', n_clicks=0),
+                        html.Div([
+                            dcc.Dropdown(
+                                id='color-by-dropdown',
+                                options=color_options,
+                                placeholder='Выберите показатель',
+                            ),
+                        ], id='color-by-container', style={'display': 'none'}),
+
+                        html.Div([
+                            dcc.Store(id='node-color-limits', data={'vmin': None, 'vmax': None}),
+                            html.Label('Порог минимума:'),
+                            dcc.Input(id='node-color-min', type='number'),
+                            html.Label('Порог максимума:'),
+                            dcc.Input(id='node-color-max', type='number'),
+                        ], id='color-thresholds-container', style={'display': 'none'}),
+                    ], id='content__scale')
+                ], id='content__sidebar'),
+
+                # Graph
+                html.Div([
+                    dcc.Store(
+                        id='size-limits',
+                        data=metrics_bounds
+                    ),
+                    cyto.Cytoscape(
+                        id='network-graph',
+                        elements=elements,
+                        layout={'name': 'preset'},
+                        stylesheet=basic_stylesheet,
+                        userPanningEnabled=True,
+                        boxSelectionEnabled=True,
+                        autounselectify=False,
+                        wheelSensitivity=0.15,
+                        style = {'width': '100%', 'height': '100%', 'backgroundColor': '#f7f9ff'}
+                    ),
+
+                    # Legend
+                    html.Div([
+                        html.Div(id='legend-bar'),
+                        html.Div(id='legend-labels')
+                    ], id='color-legend'),
+                    
+                    # Tooltip
+                    html.Div(id='hover-tooltip')
+                ], id='content__graph')
+            ], id='content'),
+
+            # Overlay
+            html.Div([
+                html.Div([
+                    html.Div(['Выберите организацию'], id='overlay__header'),
+
+                    dcc.Dropdown(
+                        id='overlay-dropdown',
+                        options=org_map,
+                        value=DEFAULT_ORG,
+                        clearable=False
+                    ),
+
+                    html.Div([
+                        html.Button('Выбрать', id='overlay-button', n_clicks=0),
+                        html.Button('Отмена', id='overlay-cancel-button', n_clicks=0),
+                    ], id='overlay__buttons')
+                ], id='overlay__container'),
+            ], id='overlay'),
+        ], id='container')
+    ])
+
+
+# Organization map
+df = pd.read_csv('org_data/org.txt', sep='\t', dtype=str)
+df = df.sort_values('Name')
+org_map = df[['ID','Name']].rename(columns={'ID':'value','Name':'label'}).to_dict('records')
+org_name_map = {item['value']: item['label'] for item in org_map}
+
+
 # Layout
-app.layout = html.Div([
-    html.Div([
-        html.Div([
-            html.Label('Размер вершин:'),
-            dcc.Dropdown(
-                id = 'size-dropdown',
-                options = size_options,
-                value = size_options[0]['value']
-            )
-        ], id='content__size'),
-        html.Div([
-            html.Label('Минимальный вес ребра:'),
-            dcc.Input(
-                id = 'edge-threshold',
-                type = 'number',
-                min = int(edges['weight'].min()),
-                max = int(edges['weight'].max()),
-                step = 1,
-                value = int(edges['weight'].min()),
-            )
-        ], id='content__filter_edge'),
-        html.Div([
-            html.Div(f'Кластеров: {nodes['cluster'].max()}', id='content__cluster-info'),
-            html.Label('Поиск кластера:'),
-            html.Div([
-                dcc.Input(
-                    id='cluster-filter',
-                    type='number',
-                    min=int(nodes['cluster'].min()),
-                    max=int(nodes['cluster'].max()),
-                    placeholder='Введите номер',
-                    debounce=True
-                )
-            ], id='content__cluster-search', className='search__input'),
-            html.Div([
-                html.Button('', id = 'cluster-button', className='search__button-item', n_clicks = 0)
-            ], id='content__cluster-button', className='search__button')
-        ], id='content__cluster', className='search'),
-        html.Div([
-            html.Label('Поиск автора:'),
-            html.Div([
-                dcc.Input(
-                    id = 'person-search',
-                    type = 'text',
-                    placeholder = 'иванов и.и.',
-                    debounce = True
-                )
-            ], id='content__input-search', className='search__input'),
-            html.Div([
-                html.Button('', id = 'search-button', className='search__button-item', n_clicks = 0)
-            ], id='content__search-button', className='search__button')
-        ], id='content__search', className='search'),
-        html.Div([
-            html.Button("Сбросить поиск", id = "reset-button", n_clicks = 0)
-        ], id='content__reset'),
-        html.Div([
-            dcc.Checklist(
-                id = 'show-weights',
-                options = [{'label': 'Показывать веса рёбер', 'value': 'show'}],
-                value = ['show'],
-                labelStyle = {'display': 'flex'}
-            ),
-        ], id='content__checkbox'),
-        html.Div([
-            html.Button("Анализ по метрике", id="color-button", n_clicks=0),
-            html.Div([
-                dcc.Dropdown(
-                    id = 'color-by-dropdown',
-                    options = color_options,
-                    placeholder = "Выберите показатель",
-                ),
-            ], id='color-by-container', style={'display': 'none'}),
-            html.Div([
-                dcc.Store(id='node-color-limits', data={'vmin': None, 'vmax': None}),
-                html.Label('Порог минимума:'),
-                dcc.Input(id='node-color-min', type='number'),
-                html.Label('Порог максимума:'),
-                dcc.Input(id='node-color-max', type='number'),
-            ], id='color-thresholds-container', style={'display': 'none'}),
-        ], id='content__scale')
-    ], id='content__sidebar'),
-    html.Div([
-        dcc.Store(
-            id='size-limits',
-            data=metrics_bounds
-        ),
-        cyto.Cytoscape(
-            id='network-graph',
-            elements=elements,
-            layout={'name': 'preset'},
-            stylesheet=basic_stylesheet,
-            userPanningEnabled=True,
-            boxSelectionEnabled=True,
-            autounselectify=False,
-            wheelSensitivity=0.15,
-            style = {'width': '100%', 'height': '100%', 'backgroundColor': '#f7f9ff'}
-        ),
-        html.Div([
-            html.Div(id='legend-bar'),
-            html.Div(id='legend-labels')
-        ], id='color-legend'),
-        html.Div(id='hover-tooltip')
-    ], id='content__graph')
-], id='content')
+app.layout = base_layout(org_map)
 
 
+# Update graph
+@app.callback(
+    Output('network-graph', 'elements'),
+    Output('network-graph', 'stylesheet'),
+
+    Output('content__name_org', 'children'),
+
+    Output('size-dropdown', 'value'),
+
+    Output('edge-threshold', 'min'),
+    Output('edge-threshold', 'max'),
+    Output('edge-threshold', 'value'),
+
+    Output('content__cluster-info', 'children'),
+    Output('cluster-filter', 'min'),
+    Output('cluster-filter', 'max'),
+    Output('cluster-filter', 'value'),
+
+    Output('person-search', 'value'),
+
+    Output('show-weights', 'value'),
+
+    Output('color-by-dropdown', 'value'),
+    Output('node-color-min', 'value'),
+    Output('node-color-max', 'value'),
+    Output('color-by-container', 'style'),
+    Output('color-thresholds-container', 'style'),
+    Output('node-color-limits', 'data'),
+    
+    Output('size-limits', 'data'),
+
+    Output('color-legend', 'style'),
+    Output('hover-tooltip', 'style'),
+    Output('hover-tooltip', 'children'),
+
+    Input('current-org', 'data')
+)
+def update_graph_for_org(org_id):
+    # Load new data
+    data = prepare_network_elements(org_id)
+    elements = data['elements']
+    stylesheet = data['stylesheet']
+    size_options = data['size_options']
+    metrics_bounds = data['metrics_bounds']
+    color_options = data['color_options']
+    nodes = data['nodes']
+    edges = data['edges']
+
+    # Name organization
+    org_name = org_name_map.get(org_id, org_id)
+
+    # Default size option
+    default_size = size_options[0]['value']
+
+    # Edges thresholds
+    min_w = int(edges['weight'].min())
+    max_w = int(edges['weight'].max())
+    n_nodes = len(nodes)
+    if n_nodes >= 1000:
+        init_w = 7
+    elif n_nodes >= 800:
+        init_w = 6
+    elif n_nodes >= 600:
+        init_w = 5
+    elif n_nodes >= 500:
+        init_w = 4
+    elif n_nodes >= 400:
+        init_w = 3
+    elif n_nodes >= 300:
+        init_w = 2
+    else:
+        init_w = 1
+    init_w = max(min_w, min(init_w, max_w))
+    
+    # Cluster
+    min_cluster = int(nodes['cluster'].min())
+    max_cluster = int(nodes['cluster'].max())
+    cluster_info_text = f'Кластеров: {max_cluster}'
+
+    # Show weights
+    default_show_weights = ['show']
+
+    # Metrics
+    hidden_style = {'display': 'none'}
+    default_color_value = None
+    default_node_color_limits = {'vmin': None, 'vmax': None}
+
+    return (
+        elements,  # network-graph elements
+        stylesheet,  # network-graph stylesheet
+
+        org_name, # content__name_org children
+
+        default_size,  # size-dropdown value
+
+        min_w,  # edge-threshold min
+        max_w,  # edge-threshold max
+        init_w,  # edge-threshold value
+
+        cluster_info_text,  # content__cluster-info children
+        min_cluster,  # cluster-filter min
+        max_cluster,  # cluster-filter max
+        '',  # cluster-filter value
+
+        '', # person-search value
+
+        default_show_weights,  # show-weights value
+
+        default_color_value,  # color-by-dropdown value
+        None,  # node-color-min value
+        None,  # node-color-max value
+        hidden_style,  # color-by-container style
+        hidden_style,  # color-thresholds-container style
+        default_node_color_limits,  # node-color-limits data
+
+        metrics_bounds,  # size-limits data
+
+        hidden_style,  # color-legend style
+        hidden_style,  # hover-tooltip style
+        '',  # hover-tooltip children
+    )
+
+# Overlay
+app.clientside_callback(
+    """
+    function(vis) {
+        if (vis) {
+            return {'display': 'flex'};
+        }
+        return {'display': 'none'};
+    }
+    """,
+    Output('overlay', 'style'),
+    Input('overlay-visible', 'data'),
+    prevent_initial_call=True
+)
+
+# Button select organization
+app.clientside_callback(
+    """
+    function(n, sel) {
+        if (n > 0) {
+            return [sel, false];
+        }
+        return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+    }
+    """,
+    [
+        Output('current-org', 'data'),
+        Output('overlay-visible', 'data'),
+    ],
+    Input('overlay-button', 'n_clicks'),
+    State('overlay-dropdown', 'value'),
+    prevent_initial_call=True
+)
+
+# Button cancel
+app.clientside_callback(
+    """
+    function(n) {
+        if (n > 0) {
+            return false;
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('overlay-visible', 'data', allow_duplicate=True),
+    Input('overlay-cancel-button', 'n_clicks'),
+    prevent_initial_call=True
+)
+
+# Tools
 app.clientside_callback(
     """
     function(sizeValue, edgeTh, person, showWeight, colorMetric, vmin, vmax, basic, sizeLimits, limitsStore) {
@@ -209,7 +454,7 @@ app.clientside_callback(
         return graphStyle;
     }
     """,
-    Output('network-graph', 'stylesheet'),
+    Output('network-graph', 'stylesheet', allow_duplicate=True),
     [
       Input('size-dropdown', 'value'),
       Input('edge-threshold', 'value'),
@@ -223,8 +468,30 @@ app.clientside_callback(
         State('network-graph', 'stylesheet'),
         State('size-limits', 'data'),
         State('node-color-limits','data'),
-    ]
+    ],
+    prevent_initial_call=True
 )
+
+# Select organization
+app.clientside_callback(
+    """
+    function(n, current) {
+        if (n > 0) {
+            return [true, current];
+        }
+        return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+    }
+    """,
+    [
+        Output('overlay-visible', 'data', allow_duplicate=True),
+        Output('overlay-dropdown', 'value'),
+    ],
+    Input('open-overlay-button', 'n_clicks'),
+    State('current-org', 'data'),
+    prevent_initial_call=True
+)
+
+# Cluster search
 app.clientside_callback(
     """
     function(clusterValue, elements, basic) {
@@ -252,7 +519,7 @@ app.clientside_callback(
     """,
     [
         Output('network-graph', 'stylesheet', allow_duplicate=True),
-        Output('network-graph', 'elements'),
+        Output('network-graph', 'elements', allow_duplicate=True),
     ],
     Input('cluster-filter', 'value'),
     [
@@ -261,6 +528,8 @@ app.clientside_callback(
     ],
     prevent_initial_call=True
 )
+
+# Reset search
 app.clientside_callback(
     """
     function(clickReset, basic) {
@@ -278,13 +547,15 @@ app.clientside_callback(
     """,
     [
         Output('network-graph', 'stylesheet', allow_duplicate=True),
-        Output('person-search', 'value'),
-        Output('cluster-filter', 'value'),
+        Output('person-search', 'value', allow_duplicate=True),
+        Output('cluster-filter', 'value', allow_duplicate=True),
     ],
     Input('reset-button', 'n_clicks'),
     State('network-graph', 'stylesheet'),
     prevent_initial_call=True
 )
+
+# Analize by metrics
 app.clientside_callback(
     """
     function(clickColor, basic) {
@@ -304,14 +575,16 @@ app.clientside_callback(
     """,
     [
         Output('network-graph', 'stylesheet', allow_duplicate=True),
-        Output('color-by-container', 'style'),
-        Output('color-thresholds-container', 'style'),
-        Output('color-by-dropdown', 'value'),
+        Output('color-by-container', 'style', allow_duplicate=True),
+        Output('color-thresholds-container', 'style', allow_duplicate=True),
+        Output('color-by-dropdown', 'value', allow_duplicate=True),
     ],
     Input('color-button', 'n_clicks'),
     State('network-graph', 'stylesheet'),
     prevent_initial_call=True
 )
+
+# Min/max limits
 app.clientside_callback(
     """
     function(metric, nodeSize) {
@@ -327,14 +600,16 @@ app.clientside_callback(
     }
     """,
     [
-        Output('node-color-min', 'value'),
-        Output('node-color-max', 'value'),
-        Output('node-color-limits', 'data'),
+        Output('node-color-min', 'value', allow_duplicate=True),
+        Output('node-color-max', 'value', allow_duplicate=True),
+        Output('node-color-limits', 'data', allow_duplicate=True),
     ],
     Input('color-by-dropdown','value'),
     State('size-limits', 'data'),
     prevent_initial_call=True
 )
+
+# Build legend
 app.clientside_callback(
     """
     function(colorMetric, vmin, vmax) {
@@ -354,7 +629,7 @@ app.clientside_callback(
     }
     """,
     [
-        Output('color-legend', 'style'),
+        Output('color-legend', 'style', allow_duplicate=True),
         Output('legend-labels', 'children'),
     ],
     [
@@ -364,6 +639,8 @@ app.clientside_callback(
     ],
     prevent_initial_call=True
 )
+
+# Hover tooltip
 app.clientside_callback(
     """
     function(mouseoverData, sizeValue, sizeOptions) {
@@ -388,14 +665,16 @@ app.clientside_callback(
     }
     """,
     [
-        Output('hover-tooltip', 'style'),
-        Output('hover-tooltip', 'children')
+        Output('hover-tooltip', 'style', allow_duplicate=True),
+        Output('hover-tooltip', 'children', allow_duplicate=True)
     ],
     Input('network-graph', 'mouseoverNodeData'),
     Input('size-dropdown', 'value'),
     State('size-dropdown', 'options'),
     prevent_initial_call=True
 )
+
+# Edges tooltip
 app.clientside_callback(
     """
     function(edgeData) {
@@ -431,4 +710,4 @@ app.clientside_callback(
 
 # START
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
