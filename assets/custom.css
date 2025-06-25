@@ -23,6 +23,66 @@ input {
 .Select .Select-clear {
   padding-top: 3px;
 }
+.Select .Select-input input {
+  padding: 0;
+}
+.Select .Select-menu-outer {
+  padding-top: 5px;
+}
+.Select .Select-menu-outer .VirtualizedSelectOption {
+  display: block;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  padding-top: 8px;
+}
+#container {
+  position: relative;
+}
+#overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(187, 215, 232, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+  z-index: 8;
+}
+#overlay__container {
+  background-color: #FFF;
+  padding: 20px;
+  border-radius: 8px;
+  min-width: 400px;
+}
+#overlay__header {
+  margin-bottom: 10px;
+  font-size: 17px;
+  font-weight: 600;
+}
+#overlay__buttons {
+  width: 48%;
+  display: flex;
+  justify-content: space-between;
+}
+#overlay__buttons button {
+  padding: 7px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #e9ecef;
+  cursor: pointer;
+  transition: background-color 0.3s linear;
+}
+#overlay__buttons button:hover {
+  background-color: #aaa;
+}
 #content {
   margin: 0;
   padding: 0;
@@ -36,6 +96,28 @@ input {
   display: flex;
   flex-direction: column;
   padding: 20px 20px 0;
+}
+#content__name_org {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 9px;
+}
+#open-overlay-button {
+  margin-bottom: 14px;
+  width: 100%;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #e9ecef;
+  cursor: pointer;
+  transition: background-color 0.3s linear;
+}
+#open-overlay-button:hover {
+  background-color: #aaa;
 }
 #content__size {
   width: 100%;
