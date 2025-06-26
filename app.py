@@ -21,6 +21,7 @@ def base_layout(org_map):
     color_options = data['color_options']
     nodes = data['nodes']
     edges = data['edges']
+    num_publication = data['num_publication']
 
     return html.Div([
         # Stores
@@ -36,6 +37,9 @@ def base_layout(org_map):
                     # Select organization
                     html.Div(['Университет Иннополис'], id='content__name_org'),
                     html.Button('Сменить организацию', id='open-overlay-button', n_clicks=0),
+
+                    html.Div([f'Авторов: {len(nodes)}'], id='content__info-authors'),
+                    html.Div([f'Публикаций: {num_publication}'], id='content__info-pub'),
 
                     # Resize nodes
                     html.Div([
@@ -203,6 +207,9 @@ app.layout = base_layout(org_map)
 
     Output('content__name_org', 'children'),
 
+    Output('content__info-authors', 'children'),
+    Output('content__info-pub', 'children'),
+
     Output('size-dropdown', 'value'),
 
     Output('edge-threshold', 'min'),
@@ -243,9 +250,14 @@ def update_graph_for_org(org_id):
     color_options = data['color_options']
     nodes = data['nodes']
     edges = data['edges']
+    num_publication = data['num_publication']
 
     # Name organization
     org_name = org_name_map.get(org_id, org_id)
+
+    # Info organization
+    org_info_authors = f'Авторов: {len(nodes)}'
+    org_info_pub = f'Публикаций: {num_publication}'
 
     # Default size option
     default_size = size_options[0]['value']
@@ -288,6 +300,9 @@ def update_graph_for_org(org_id):
         stylesheet,  # network-graph stylesheet
 
         org_name, # content__name_org children
+
+        org_info_authors,  # content__info-authors children
+        org_info_pub,  # content__info-pub children
 
         default_size,  # size-dropdown value
 
@@ -709,4 +724,4 @@ app.clientside_callback(
 
 # START
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
