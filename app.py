@@ -163,7 +163,7 @@ def base_layout(org_map):
                     ], id='color-legend'),
                     
                     # Tooltip
-                    html.Div(id='hover-tooltip')
+                    html.Div(id='hover-tooltip'),
                 ], id='content__graph')
             ], id='content'),
 
@@ -685,6 +685,58 @@ app.clientside_callback(
     Input('network-graph', 'mouseoverNodeData'),
     Input('size-dropdown', 'value'),
     State('size-dropdown', 'options'),
+    prevent_initial_call=True
+)
+
+# Nodes tooltip
+app.clientside_callback(
+    """
+    function(nodeData, sizeOptions) {
+        if (nodeData) {
+            const name = nodeData.label || '';
+            const links = nodeData.Links || '0';
+            const indLinks = nodeData.Strength || '0';
+            const documents = nodeData.Documents || '0';
+            const citations = nodeData.Citations || '0';
+            const first_pub_year = nodeData.First_pub_year || '0';
+            const avg_pub_year = nodeData.Avg_pub_year || '0';
+            const last_pub_year = nodeData.Last_pub_year || '0';
+            const cluster = nodeData.cluster || '0';
+            const description = [
+                window.React.createElement('span', {}, name),
+                window.React.createElement('span', {}, `Количество связей: ${links}`),
+                window.React.createElement('span', {}, `Индекс связанности: ${indLinks}`),
+                window.React.createElement('span', {}, `Число публикаций: ${documents}`),
+                window.React.createElement('span', {}, `Число цитирований: ${citations}`),
+                window.React.createElement('span', {}, `Год первой публикации: ${first_pub_year}`),
+                window.React.createElement('span', {}, `Ср. год публикаций: ${avg_pub_year}`),
+                window.React.createElement('span', {}, `Год последней публикации: ${last_pub_year}`),
+                window.React.createElement('span', {}, `Кластер: ${cluster}`),
+                window.React.createElement(
+                    'button',
+                    {
+                        id: 'show-pubs-button',
+                        n_clicks: 0,
+                    },
+                    'Смотреть публикации'
+                )
+            ];
+            return [
+                {
+                    'display': 'flex',
+                },
+                description
+            ];
+        }
+        return [{'display': 'none'}, ''];
+    }
+    """,
+    [
+        Output('hover-tooltip', 'style', allow_duplicate=True),
+        Output('hover-tooltip', 'children', allow_duplicate=True)
+    ],
+    Input('network-graph', 'tapNodeData'),
+    State('size-dropdown','options'),
     prevent_initial_call=True
 )
 
