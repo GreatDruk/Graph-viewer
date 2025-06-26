@@ -334,7 +334,8 @@ def prepare_network_elements(org_id: str):
         'metrics_bounds': metrics_bounds,
         'color_options': color_options,
         'nodes': nodes,
-        'edges': edges
+        'edges': edges,
+        'num_publication': len(publication)
     }
     
     try:
