@@ -1,7 +1,6 @@
 from data_prepare import prepare_network_elements
 from dash import Dash, dcc, html, Input, Output, State
 import dash_cytoscape as cyto
-import os
 import pandas as pd
 
 DEFAULT_ORG = '14346'
