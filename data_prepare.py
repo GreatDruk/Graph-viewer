@@ -173,6 +173,13 @@ def prepare_network_elements(org_id: str):
     authors_info = build_authors_with_inform(publication, replace_dict)
     years_map = authors_info.set_index('Authors')[['First_pub_year', 'Last_pub_year']].to_dict('index')
 
+    authors_map = (
+        authors_info
+        .set_index('Authors')
+        [['Title', 'Year', 'Cited by']]
+        .to_dict('index')
+    )
+
     # Build edge descriptions
     edges['hover_text'] = edges.apply(
         lambda row: build_description(row, nodes, authors_info), axis=1
@@ -335,7 +342,8 @@ def prepare_network_elements(org_id: str):
         'color_options': color_options,
         'nodes': nodes,
         'edges': edges,
-        'num_publication': len(publication)
+        'num_publication': len(publication),
+        'authors_map': authors_map,
     }
     
     try:
