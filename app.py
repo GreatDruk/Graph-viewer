@@ -1,5 +1,5 @@
 from data_prepare import prepare_network_elements
-from dash import Dash, dcc, html, Input, Output, State
+from dash import Dash, dcc, html, Input, Output, State, exceptions
 import dash_cytoscape as cyto
 import pandas as pd
 
@@ -163,9 +163,22 @@ def base_layout(org_map):
                     ], id='color-legend'),
                     
                     # Tooltip
-                    html.Div(id='hover-tooltip'),
+                    html.Div([
+                        html.Div(id='hover-tooltip-content'),
+                        html.Button(
+                            'Смотреть публикации',
+                            id='show-node-button',
+                            n_clicks=0,
+                        )
+                    ], id='hover-tooltip'),
                 ], id='content__graph')
             ], id='content'),
+
+            # Overlay info-node
+            dcc.Store(id='selected-node', data=None),
+            html.Div([
+                html.Div(id='node-overlay-content')
+            ], id='node-overlay'),
 
             # Overlay
             html.Div([
@@ -236,7 +249,7 @@ app.layout = base_layout(org_map)
 
     Output('color-legend', 'style'),
     Output('hover-tooltip', 'style'),
-    Output('hover-tooltip', 'children'),
+    Output('hover-tooltip-content', 'children'),
 
     Input('current-org', 'data')
 )
@@ -330,7 +343,7 @@ def update_graph_for_org(org_id):
 
         hidden_style,  # color-legend style
         hidden_style,  # hover-tooltip style
-        '',  # hover-tooltip children
+        '',  # hover-tooltip-content children
     )
 
 # Overlay
@@ -672,15 +685,19 @@ app.clientside_callback(
                 {
                     'display': 'flex',
                 },
-                description
+                description,
+                {
+                    'display': 'none'
+                },
             ];
         }
-        return [{'display': 'none'}, ''];
+        return [{'display': 'none'}, '', {'display': 'none'}];
     }
     """,
     [
         Output('hover-tooltip', 'style', allow_duplicate=True),
-        Output('hover-tooltip', 'children', allow_duplicate=True)
+        Output('hover-tooltip-content', 'children', allow_duplicate=True),
+        Output('show-node-button', 'style', allow_duplicate=True),
     ],
     Input('network-graph', 'mouseoverNodeData'),
     Input('size-dropdown', 'value'),
@@ -712,31 +729,90 @@ app.clientside_callback(
                 window.React.createElement('span', {}, `Ср. год публикаций: ${avg_pub_year}`),
                 window.React.createElement('span', {}, `Год последней публикации: ${last_pub_year}`),
                 window.React.createElement('span', {}, `Кластер: ${cluster}`),
-                window.React.createElement(
-                    'button',
-                    {
-                        id: 'show-pubs-button',
-                        n_clicks: 0,
-                    },
-                    'Смотреть публикации'
-                )
             ];
             return [
                 {
                     'display': 'flex',
                 },
-                description
+                description,
+                {
+                    'display': 'block',
+                },
+                nodeData.label,
             ];
         }
-        return [{'display': 'none'}, ''];
+        return [{'display': 'none'}, '', {'display': 'none'}, ''];
     }
     """,
     [
         Output('hover-tooltip', 'style', allow_duplicate=True),
-        Output('hover-tooltip', 'children', allow_duplicate=True)
+        Output('hover-tooltip-content', 'children', allow_duplicate=True),
+        Output('show-node-button', 'style'),
+        Output('selected-node', 'data'),
     ],
     Input('network-graph', 'tapNodeData'),
     State('size-dropdown','options'),
+    prevent_initial_call=True
+)
+
+# Nodes tooltip button
+@app.callback(
+    Output('node-overlay','style'),
+    Output('node-overlay-content','children'),
+    Input('show-node-button','n_clicks'),
+    State('selected-node','data'),
+    State('current-org', 'data'),
+    prevent_initial_call=True
+)
+def show_pubs(n_clicks, author_label, org_id):
+    if not n_clicks:
+        raise exceptions.PreventUpdate
+    
+    # Search author
+    data = prepare_network_elements(org_id)
+    author_dict = data['authors_map'].get(author_label.lower(), None)
+
+    if not author_dict:
+        items = [html.Div('Нет публикаций')]
+    else:
+        df = pd.DataFrame({
+            'Title': author_dict['Title'],
+            'Year': author_dict['Year'],
+            'Cited by': author_dict['Cited by']
+        })
+
+        top = df.sort_values('Cited by', ascending=False).head(5)
+        items = []
+        c = 1
+        for _, row in top.iterrows():
+            items.append(
+                html.Div(
+                    [
+                        f'{c}) {row.Title} - {row.Year} год - {row["Cited by"]} цит.'
+                    ], 
+                className='node-overlay-text')
+            )
+            c += 1
+
+    content = [
+        html.Div(author_label, id='node-overlay-header'),
+        *items,
+        html.Button('Закрыть', id='node-overlay-close', n_clicks=0),
+    ]
+    return {'display':'flex'}, content
+
+# Button close
+app.clientside_callback(
+    """
+    function(n) {
+        if (n > 0) {
+            return {'display':'none'};
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('node-overlay', 'style', allow_duplicate=True),
+    Input('node-overlay-close', 'n_clicks'),
     prevent_initial_call=True
 )
 
@@ -759,15 +835,19 @@ app.clientside_callback(
                 {
                     'display': 'flex',
                 },
-                description
+                description,
+                {
+                    'display': 'none',
+                },
             ];
         }
-        return [{'display': 'none'}, ''];
+        return [{'display': 'none'}, '', {'display': 'none'}];
     }
     """,
     [
         Output('hover-tooltip', 'style', allow_duplicate=True),
-        Output('hover-tooltip', 'children', allow_duplicate=True)
+        Output('hover-tooltip-content', 'children', allow_duplicate=True),
+        Output('show-node-button', 'style', allow_duplicate=True),
     ],
     Input('network-graph', 'tapEdgeData'),
     prevent_initial_call=True
