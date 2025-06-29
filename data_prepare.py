@@ -4,6 +4,7 @@ import pandas as pd
 import os.path
 import pickle
 from datetime import datetime
+import itertools
 
 def get_source_paths(org_id: str):
     base_path = f'org_data/processed/{org_id}'
@@ -33,6 +34,12 @@ def load_cache(cache_path: str):
 
 def load_cache_authors(org_id: str) -> dict:
     path = f'org_data/processed/{org_id}/cache_authors.pkl'
+    with open(path, 'rb') as f:
+        return pickle.load(f)
+
+
+def load_cache_coauthors(org_id: str) -> dict:
+    path = f'org_data/processed/{org_id}/cache_coauthors.pkl'
     with open(path, 'rb') as f:
         return pickle.load(f)
 
@@ -116,41 +123,38 @@ def build_authors_with_inform(publication: pd.DataFrame, replace_dict: dict) -> 
     return df
 
 
-def build_description(row, nodes: pd.DataFrame, authors_with_inform: pd.DataFrame, max_display: int = 3) -> str:
-    first = nodes.loc[nodes['id'] == row['first_author'], 'label'].iloc[0]
-    second = nodes.loc[nodes['id'] == row['second_author'], 'label'].iloc[0]
+def build_coauthors_map(publication: pd.DataFrame, replace_dict: dict, edges_records: list) -> dict:
+    df = (
+        publication.assign(
+            Authors = lambda df: df['Authors'].apply(
+                standardize_author_names,
+                replace_dict=replace_dict
+            )
+        )
+    )
 
-    first_inform = authors_with_inform[authors_with_inform['Authors'] == first].iloc[0]
-    second_inform = authors_with_inform[authors_with_inform['Authors'] == second].iloc[0]
+    coauthors_id_map = {}
+    for ind, edge in enumerate(edges_records):
+        source, target = sorted([edge['first_author'], edge['second_author']])
+        coauthors_id_map[(source, target)] = ind
 
-    first_works = set(zip(first_inform['Title'], first_inform['Year'],
-                          first_inform['Source title'], first_inform['Cited by']))
-    second_works = set(zip(second_inform['Title'], second_inform['Year'],
-                           second_inform['Source title'], second_inform['Cited by']))
-    
-    common = sorted(first_works & second_works, key=lambda x: x[-1], reverse=True)
+    co_map: dict[tuple[str, str], list[tuple]] = {}
+    for _, row in df.iterrows():
+        authors = row['Authors']
+        for a, b in itertools.combinations(sorted(authors), 2):
+            if (a, b) in coauthors_id_map:
+                key = coauthors_id_map[(a, b)]
+                if key not in co_map:
+                    co_map[key] = []
+                co_map[key].append((
+                    row['Title'],
+                    row['Year'],
+                    row['Source title'],
+                    row['Cited by'],
+                    row['Link']
+                ))
 
-    res = []
-    for number, inform in enumerate(common[:max_display], 1):
-        res.append(f"{number}. {inform[0]}, {inform[1]}")
-    return '\n\n'.join(res)
-
-
-def wrap_text(txt: str, width: int = 50) -> str:
-    sentences = txt.split('\n\n')
-    res = []
-    for sentence in sentences:
-        words = sentence.split(' ')
-        lines, cur = [], ''
-        for w in words:
-            if len(cur) + len(w) + 1 > width:
-                lines.append(cur)
-                cur = w
-            else:
-                cur = f"{cur} {w}".strip()
-        lines.append(cur)
-        res.append('\n\n'.join(lines))
-    return '\n\n'.join(res)
+    return co_map
 
 
 def scale_coordinates(series: pd.Series, new_min: int = 0, new_max: int = 2000) -> pd.Series:
@@ -164,7 +168,8 @@ def prepare_network_elements(org_id: str):
     source_paths = get_source_paths(org_id)
     cache_path = f'org_data/processed/{org_id}/cache.pkl'
     cache_path_authors = f'org_data/processed/{org_id}/cache_authors.pkl'
-    if is_cache(cache_path, source_paths) and os.path.exists(cache_path_authors):
+    cache_path_coauthors = f'org_data/processed/{org_id}/cache_coauthors.pkl'
+    if is_cache(cache_path, source_paths) and os.path.exists(cache_path_authors) and os.path.exists(cache_path_coauthors):
         try:
             return load_cache(cache_path)
         except Exception:
@@ -187,11 +192,6 @@ def prepare_network_elements(org_id: str):
         .to_dict('index')
     )
     save_cache(cache_path_authors, authors_map)
-
-    # Build edge descriptions
-    edges['hover_text'] = edges.apply(
-        lambda row: build_description(row, nodes, authors_info), axis=1
-    )
 
     # Convert IDs to names
     edges['first_author'] = edges['first_author'].apply(
@@ -261,17 +261,20 @@ def prepare_network_elements(org_id: str):
     edges_elements = [
         {
             'data': {
-                'id': f"{edge['first_author']}-{edge['second_author']}",
+                'id': f'edge-{ind}',
                 'source': edge['first_author'],
                 'target': edge['second_author'],
                 'weight': edge['weight'],
-                'hover': edge['hover_text'],
                 'color': node_color_map[edge['first_author']]
             },
         }
-        for edge in edges_records
+        for ind, edge in enumerate(edges_records)
     ]
     elements = nodes_elements + edges_elements
+
+    # Build edge descriptions
+    coauthors_info_map = build_coauthors_map(publication, replace_dict, edges_records)
+    save_cache(cache_path_coauthors, coauthors_info_map)
 
     val_min = nodes['Links'].min()
     val_max = nodes['Links'].max()
