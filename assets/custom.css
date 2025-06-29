@@ -343,11 +343,35 @@ input {
 #node-overlay-header {
   text-transform: capitalize;
   font-weight: 600;
-  font-size: 17px;
-  margin-bottom: 14px;
+  font-size: 18px;
+  margin-bottom: 10px;
 }
 .node-overlay-text {
   margin-bottom: 6px;
+  max-height: 250px;
+  overflow-y: scroll;
+}
+.node-overlay-info {
+  margin-bottom: 10px;
+}
+.node-overlay-info div {
+  margin-bottom: 4px;
+}
+.node-overlay-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.node-overlay-table thead th:first-child {
+  width: 85%;
+  text-align: left;
+}
+.node-overlay-table tbody td:first-child {
+  text-align: left;
+}
+.node-overlay-table tbody td {
+  text-align: center;
+  vertical-align: top;
+  padding: 5px 0;
 }
 #node-overlay-close {
   margin-top: 14px;
