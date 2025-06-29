@@ -773,30 +773,39 @@ def show_pubs(n_clicks, author_label, org_id):
     author_dict = data.get(author_label.lower(), None)
 
     if not author_dict:
-        items = [html.Div('Нет публикаций')]
+        table = [html.Div('Публикации не найдены')]
     else:
         df = pd.DataFrame({
             'Title': author_dict['Title'],
             'Year': author_dict['Year'],
             'Cited by': author_dict['Cited by']
-        })
+        }).sort_values('Cited by', ascending=False)
 
-        top = df.sort_values('Cited by', ascending=False).head(5)
-        items = []
-        c = 1
-        for _, row in top.iterrows():
-            items.append(
-                html.Div(
-                    [
-                        f'{c}) {row.Title} - {row.Year} год - {row["Cited by"]} цит.'
-                    ], 
-                className='node-overlay-text')
-            )
-            c += 1
+        description = html.Div([
+            html.Div([f'Число публикаций: {len(df)}']),
+            html.Div([f'Год первой публикации: {df['Year'].min()}']),
+            html.Div([f'Ср. год публикаций: {round(df['Year'].mean(), 4)}']),
+            html.Div([f'Год последней публикации: {df['Year'].max()}']),
+        ], className='node-overlay-info')
+
+        table = html.Div([
+            html.Table([
+                html.Thead(html.Tr([html.Th(c) for c in ['Название','Год','Цит.']])),
+                html.Tbody([
+                    html.Tr([
+                        html.Td(row['Title']),
+                        html.Td(row['Year']),
+                        html.Td(row['Cited by'])
+                    ])
+                    for _, row in df.iterrows()
+                ])
+            ], className='node-overlay-table'),
+        ], className='node-overlay-text')
 
     content = [
         html.Div(author_label, id='node-overlay-header'),
-        *items,
+        description,
+        table,
         html.Button('Закрыть', id='node-overlay-close', n_clicks=0),
     ]
     return {'display':'flex'}, content
