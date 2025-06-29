@@ -6,12 +6,12 @@ import pickle
 from datetime import datetime
 
 def get_source_paths(org_id: str):
-    base_path = f"org_data/processed/{org_id}"
+    base_path = f'org_data/processed/{org_id}'
     return {
-        'thesaurus': os.path.join(base_path, "thesaurus_authors.txt"),
-        'publications': os.path.join(base_path, "publications.csv"),
-        'nodes': os.path.join(base_path, "map.txt"),
-        'edges': os.path.join(base_path, "network.txt"),
+        'thesaurus': os.path.join(base_path, 'thesaurus_authors.txt'),
+        'publications': os.path.join(base_path, 'publications.csv'),
+        'nodes': os.path.join(base_path, 'map.txt'),
+        'edges': os.path.join(base_path, 'network.txt'),
     }
 
 
@@ -29,6 +29,12 @@ def is_cache(cache_path: str, source_paths: dict) -> bool:
 def load_cache(cache_path: str):
     with open(cache_path, 'rb') as f:
         return pickle.load(f)
+    
+
+def load_cache_authors(org_id: str) -> dict:
+    path = f'org_data/processed/{org_id}/cache_authors.pkl'
+    with open(path, 'rb') as f:
+        return pickle.load(f)
 
 
 def save_cache(cache_path: str, data):
@@ -38,7 +44,7 @@ def save_cache(cache_path: str, data):
 
 
 def load_thesaurus(org_id: str) -> dict:
-    thesaurus_path = f"org_data/processed/{org_id}/thesaurus_authors.txt"
+    thesaurus_path = f'org_data/processed/{org_id}/thesaurus_authors.txt'
     if not os.path.exists(thesaurus_path):
         build_author_thesaurus(org_id=org_id)
 
@@ -156,8 +162,9 @@ def scale_coordinates(series: pd.Series, new_min: int = 0, new_max: int = 2000) 
 def prepare_network_elements(org_id: str):
     # Cache
     source_paths = get_source_paths(org_id)
-    cache_path = f"org_data/processed/{org_id}/cache.pkl"
-    if is_cache(cache_path, source_paths):
+    cache_path = f'org_data/processed/{org_id}/cache.pkl'
+    cache_path_authors = f'org_data/processed/{org_id}/cache_authors.pkl'
+    if is_cache(cache_path, source_paths) and os.path.exists(cache_path_authors):
         try:
             return load_cache(cache_path)
         except Exception:
@@ -179,6 +186,7 @@ def prepare_network_elements(org_id: str):
         [['Title', 'Year', 'Cited by']]
         .to_dict('index')
     )
+    save_cache(cache_path_authors, authors_map)
 
     # Build edge descriptions
     edges['hover_text'] = edges.apply(
@@ -231,7 +239,7 @@ def prepare_network_elements(org_id: str):
         {
             'data': {
                 'id': node['label'],
-                'label': node['label'],
+                'label': node['label'].title(),
                 'val': node['Links'],
                 'Links': node['Links'],
                 'Strength': node['Strength'],
@@ -342,8 +350,7 @@ def prepare_network_elements(org_id: str):
         'color_options': color_options,
         'nodes': nodes,
         'edges': edges,
-        'num_publication': len(publication),
-        'authors_map': authors_map,
+        'num_publication': len(publication)
     }
     
     try:
