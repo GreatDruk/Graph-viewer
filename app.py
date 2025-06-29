@@ -2,11 +2,14 @@ from data_prepare import prepare_network_elements, load_cache_authors, load_cach
 from dash import Dash, dcc, html, Input, Output, State, exceptions
 import dash_cytoscape as cyto
 import pandas as pd
+import logging
+
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 DEFAULT_ORG = '14346'
 
 # DASH
-app = Dash(__name__, suppress_callback_exceptions=True)
+app = Dash(__name__, title='Academicnet', update_title=None, suppress_callback_exceptions=True)
 
 
 def base_layout(org_map):
@@ -908,4 +911,4 @@ app.clientside_callback(
 
 # START
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
