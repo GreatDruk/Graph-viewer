@@ -1,4 +1,4 @@
-from data_prepare import prepare_network_elements
+from data_prepare import prepare_network_elements, load_cache_authors
 from dash import Dash, dcc, html, Input, Output, State, exceptions
 import dash_cytoscape as cyto
 import pandas as pd
@@ -92,7 +92,7 @@ def base_layout(org_map):
                             dcc.Input(
                                 id='person-search',
                                 type='text',
-                                placeholder='иванов и.и.',
+                                placeholder='Иванов И.И.',
                                 debounce=True
                             )
                         ], id='content__input-search', className='search__input'),
@@ -469,11 +469,11 @@ app.clientside_callback(
         if(person) {
             const low = person.toLowerCase();
             graphStyle.push({
-                selector: `node[label *= "${low}"]`,
+                selector: `node[id *= "${low}"]`,
                 style: { 'background-color': 'red' }
             });
             graphStyle.push({
-                selector: `node[label !*= "${low}"]`,
+                selector: `node[id !*= "${low}"]`,
                 style: { 'background-color': '#b0daff' }
             });
         }
@@ -672,7 +672,7 @@ app.clientside_callback(
     """
     function(mouseoverData, sizeValue, sizeOptions) {
         if (mouseoverData) {
-            const name = mouseoverData.label || '';
+            const name = mouseoverData.id || '';
             const val = mouseoverData[sizeValue] || '0';
             const label = sizeOptions.find(o => o.value === sizeValue)?.label || 'None';
             const cluster = mouseoverData.cluster;
@@ -710,7 +710,7 @@ app.clientside_callback(
     """
     function(nodeData, sizeOptions) {
         if (nodeData) {
-            const name = nodeData.label || '';
+            const name = nodeData.id || '';
             const links = nodeData.Links || '0';
             const indLinks = nodeData.Strength || '0';
             const documents = nodeData.Documents || '0';
@@ -738,7 +738,7 @@ app.clientside_callback(
                 {
                     'display': 'block',
                 },
-                nodeData.label,
+                nodeData.id,
             ];
         }
         return [{'display': 'none'}, '', {'display': 'none'}, ''];
@@ -769,8 +769,8 @@ def show_pubs(n_clicks, author_label, org_id):
         raise exceptions.PreventUpdate
     
     # Search author
-    data = prepare_network_elements(org_id)
-    author_dict = data['authors_map'].get(author_label.lower(), None)
+    data = load_cache_authors(org_id)
+    author_dict = data.get(author_label.lower(), None)
 
     if not author_dict:
         items = [html.Div('Нет публикаций')]
