@@ -308,7 +308,7 @@ input {
   margin-bottom: 0;
   white-space: pre-wrap;
 }
-#show-node-button {
+#show-info-button {
   display: none;
   border: none;
   background: none;
@@ -320,7 +320,7 @@ input {
   font-weight: 600;
   cursor: pointer;
 }
-#node-overlay {
+#info-overlay {
   display: none;
   position: absolute;
   top: 0;
@@ -333,47 +333,47 @@ input {
   backdrop-filter: blur(3px);
   z-index: 8;
 }
-#node-overlay-content {
+#info-overlay-content {
   background-color: #FFF;
   padding: 20px;
   border-radius: 8px;
   min-width: 400px;
   max-width: 800px;
 }
-#node-overlay-header {
+#info-overlay-header {
   text-transform: capitalize;
   font-weight: 600;
   font-size: 18px;
   margin-bottom: 10px;
 }
-.node-overlay-text {
+.info-overlay-text {
   margin-bottom: 6px;
   max-height: 250px;
   overflow-y: scroll;
 }
-.node-overlay-info {
+.info-overlay-info {
   margin-bottom: 10px;
 }
-.node-overlay-info div {
+.info-overlay-info div {
   margin-bottom: 4px;
 }
-.node-overlay-table {
+.info-overlay-table {
   width: 100%;
   border-collapse: collapse;
 }
-.node-overlay-table thead th:first-child {
+.info-overlay-table thead th:first-child {
   width: 85%;
   text-align: left;
 }
-.node-overlay-table tbody td:first-child {
+.info-overlay-table tbody td:first-child {
   text-align: left;
 }
-.node-overlay-table tbody td {
+.info-overlay-table tbody td {
   text-align: center;
   vertical-align: top;
   padding: 5px 0;
 }
-#node-overlay-close {
+#info-overlay-close {
   margin-top: 14px;
   padding: 7px 15px;
   display: flex;
@@ -386,6 +386,6 @@ input {
   cursor: pointer;
   transition: background-color 0.3s linear;
 }
-#node-overlay-close:hover {
+#info-overlay-close:hover {
   background-color: #aaa;
 }
