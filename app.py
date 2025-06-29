@@ -1,4 +1,4 @@
-from data_prepare import prepare_network_elements, load_cache_authors
+from data_prepare import prepare_network_elements, load_cache_authors, load_cache_coauthors
 from dash import Dash, dcc, html, Input, Output, State, exceptions
 import dash_cytoscape as cyto
 import pandas as pd
@@ -167,18 +167,18 @@ def base_layout(org_map):
                         html.Div(id='hover-tooltip-content'),
                         html.Button(
                             'Смотреть публикации',
-                            id='show-node-button',
+                            id='show-info-button',
                             n_clicks=0,
                         )
                     ], id='hover-tooltip'),
                 ], id='content__graph')
             ], id='content'),
 
-            # Overlay info-node
-            dcc.Store(id='selected-node', data=None),
+            # Overlay info
+            dcc.Store(id='selected-item', data=None),
             html.Div([
-                html.Div(id='node-overlay-content')
-            ], id='node-overlay'),
+                html.Div(id='info-overlay-content')
+            ], id='info-overlay'),
 
             # Overlay
             html.Div([
@@ -697,7 +697,7 @@ app.clientside_callback(
     [
         Output('hover-tooltip', 'style', allow_duplicate=True),
         Output('hover-tooltip-content', 'children', allow_duplicate=True),
-        Output('show-node-button', 'style', allow_duplicate=True),
+        Output('show-info-button', 'style', allow_duplicate=True),
     ],
     Input('network-graph', 'mouseoverNodeData'),
     Input('size-dropdown', 'value'),
@@ -747,81 +747,11 @@ app.clientside_callback(
     [
         Output('hover-tooltip', 'style', allow_duplicate=True),
         Output('hover-tooltip-content', 'children', allow_duplicate=True),
-        Output('show-node-button', 'style'),
-        Output('selected-node', 'data'),
+        Output('show-info-button', 'style'),
+        Output('selected-item', 'data'),
     ],
     Input('network-graph', 'tapNodeData'),
     State('size-dropdown','options'),
-    prevent_initial_call=True
-)
-
-# Nodes tooltip button
-@app.callback(
-    Output('node-overlay','style'),
-    Output('node-overlay-content','children'),
-    Input('show-node-button','n_clicks'),
-    State('selected-node','data'),
-    State('current-org', 'data'),
-    prevent_initial_call=True
-)
-def show_pubs(n_clicks, author_label, org_id):
-    if not n_clicks:
-        raise exceptions.PreventUpdate
-    
-    # Search author
-    data = load_cache_authors(org_id)
-    author_dict = data.get(author_label.lower(), None)
-
-    if not author_dict:
-        table = [html.Div('Публикации не найдены')]
-    else:
-        df = pd.DataFrame({
-            'Title': author_dict['Title'],
-            'Year': author_dict['Year'],
-            'Cited by': author_dict['Cited by']
-        }).sort_values('Cited by', ascending=False)
-
-        description = html.Div([
-            html.Div([f'Число публикаций: {len(df)}']),
-            html.Div([f'Год первой публикации: {df['Year'].min()}']),
-            html.Div([f'Ср. год публикаций: {round(df['Year'].mean(), 4)}']),
-            html.Div([f'Год последней публикации: {df['Year'].max()}']),
-        ], className='node-overlay-info')
-
-        table = html.Div([
-            html.Table([
-                html.Thead(html.Tr([html.Th(c) for c in ['Название','Год','Цит.']])),
-                html.Tbody([
-                    html.Tr([
-                        html.Td(row['Title']),
-                        html.Td(row['Year']),
-                        html.Td(row['Cited by'])
-                    ])
-                    for _, row in df.iterrows()
-                ])
-            ], className='node-overlay-table'),
-        ], className='node-overlay-text')
-
-    content = [
-        html.Div(author_label, id='node-overlay-header'),
-        description,
-        table,
-        html.Button('Закрыть', id='node-overlay-close', n_clicks=0),
-    ]
-    return {'display':'flex'}, content
-
-# Button close
-app.clientside_callback(
-    """
-    function(n) {
-        if (n > 0) {
-            return {'display':'none'};
-        }
-        return window.dash_clientside.no_update;
-    }
-    """,
-    Output('node-overlay', 'style', allow_duplicate=True),
-    Input('node-overlay-close', 'n_clicks'),
     prevent_initial_call=True
 )
 
@@ -838,7 +768,6 @@ app.clientside_callback(
             const description = [
                 window.React.createElement('span', {}, label),
                 window.React.createElement('span', {}, weight),
-                window.React.createElement('span', {style: {'marginTop': '10px'}}, hoverText)
             ];
             return [
                 {
@@ -846,19 +775,133 @@ app.clientside_callback(
                 },
                 description,
                 {
-                    'display': 'none',
+                    'display': 'flex',
                 },
+                `${edgeData.id}#${label}`,
             ];
         }
-        return [{'display': 'none'}, '', {'display': 'none'}];
+        return [{'display': 'none'}, '', {'display': 'none'}, ''];
     }
     """,
     [
         Output('hover-tooltip', 'style', allow_duplicate=True),
         Output('hover-tooltip-content', 'children', allow_duplicate=True),
-        Output('show-node-button', 'style', allow_duplicate=True),
+        Output('show-info-button', 'style', allow_duplicate=True),
+        Output('selected-item', 'data', allow_duplicate=True),
     ],
     Input('network-graph', 'tapEdgeData'),
+    prevent_initial_call=True
+)
+
+# Info tooltip button
+@app.callback(
+    Output('info-overlay','style'),
+    Output('info-overlay-content','children'),
+    Input('show-info-button','n_clicks'),
+    State('selected-item','data'),
+    State('current-org', 'data'),
+    prevent_initial_call=True
+)
+def show_pubs(n_clicks, item_label, org_id):
+    if not n_clicks:
+        raise exceptions.PreventUpdate
+    
+    item_label = item_label.split('#')
+
+    if item_label[0][:5] == 'edge-':
+        # Search common pub
+        data = load_cache_coauthors(org_id)
+        coauthors_list = data.get(int(item_label[0][5:]), None)
+
+        header = html.Div(item_label[1], id='info-overlay-header')
+
+        if not coauthors_list:
+            table = [html.Div('Совместные публикации не найдены')]
+            description = html.Div([])
+        else:
+            df = pd.DataFrame(
+                coauthors_list,
+                columns=['Title', 'Year', 'Source title', 'Cited by', 'Link']
+            ).sort_values('Cited by', ascending=False)
+
+            description = html.Div([
+                html.Div([f'Число публикаций: {len(df)}']),
+                html.Div([f'Год первой публикации: {df['Year'].min()}']),
+                html.Div([f'Ср. год публикаций: {round(df['Year'].mean(), 4)}']),
+                html.Div([f'Год последней публикации: {df['Year'].max()}']),
+            ], className='info-overlay-info')
+
+            table = html.Div([
+                html.Table([
+                    html.Thead(html.Tr([html.Th(c) for c in ['Название','Год','Цит.']])),
+                    html.Tbody([
+                        html.Tr([
+                            html.Td(row['Title']),
+                            html.Td(row['Year']),
+                            html.Td(row['Cited by'])
+                        ])
+                        for _, row in df.iterrows()
+                    ])
+                ], className='info-overlay-table'),
+            ], className='info-overlay-text')
+    else:
+        # Search author
+        data = load_cache_authors(org_id)
+        author_dict = data.get(item_label[0].lower(), None)
+
+        header = html.Div(item_label[0], id='info-overlay-header')
+
+        if not author_dict:
+            table = [html.Div('Публикации не найдены')]
+            description = html.Div([])
+        else:
+            df = pd.DataFrame({
+                'Title': author_dict['Title'],
+                'Year': author_dict['Year'],
+                'Cited by': author_dict['Cited by']
+            }).sort_values('Cited by', ascending=False)
+
+            description = html.Div([
+                html.Div([f'Число публикаций: {len(df)}']),
+                html.Div([f'Год первой публикации: {df['Year'].min()}']),
+                html.Div([f'Ср. год публикаций: {round(df['Year'].mean(), 4)}']),
+                html.Div([f'Год последней публикации: {df['Year'].max()}']),
+            ], className='info-overlay-info')
+
+            table = html.Div([
+                html.Table([
+                    html.Thead(html.Tr([html.Th(c) for c in ['Название','Год','Цит.']])),
+                    html.Tbody([
+                        html.Tr([
+                            html.Td(row['Title']),
+                            html.Td(row['Year']),
+                            html.Td(row['Cited by'])
+                        ])
+                        for _, row in df.iterrows()
+                    ])
+                ], className='info-overlay-table'),
+            ], className='info-overlay-text')
+
+    content = [
+        header,
+        description,
+        table,
+        html.Button('Закрыть', id='info-overlay-close', n_clicks=0),
+    ]
+    return {'display':'flex'}, content
+
+# Button close
+app.clientside_callback(
+    """
+    function(n) {
+        if (n > 0) {
+            return {'display':'none'};
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('info-overlay', 'style', allow_duplicate=True),
+    Input('info-overlay-close', 'n_clicks'),
     prevent_initial_call=True
 )
 
