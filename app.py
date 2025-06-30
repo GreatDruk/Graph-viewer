@@ -9,7 +9,12 @@ logging.getLogger('werkzeug').setLevel(logging.ERROR)
 DEFAULT_ORG = '14346'
 
 # DASH
-app = Dash(__name__, title='Academicnet', update_title=None, suppress_callback_exceptions=True)
+app = Dash(
+    __name__,
+    title='AcademicNet',
+    update_title=None,
+    suppress_callback_exceptions=True
+)
 
 
 def base_layout(org_map):
@@ -38,11 +43,34 @@ def base_layout(org_map):
                 # Sidebar
                 html.Div([
                     # Select organization
-                    html.Div(['Университет Иннополис'], id='content__name_org'),
-                    html.Button('Сменить организацию', id='open-overlay-button', n_clicks=0),
+                    html.Div(
+                        ['Университет Иннополис'],
+                        id='name-organization',
+                        className='content__name-org header'
+                    ),
+                    html.Button(
+                        'Сменить организацию',
+                        id='open-overlay-button',
+                        className='content__change-org button',
+                        n_clicks=0
+                    ),
 
-                    html.Div([f'Авторов: {len(nodes)}'], id='content__info-authors'),
-                    html.Div([f'Публикаций: {num_publication}'], id='content__info-pub'),
+                    # Organization info
+                    html.Div(
+                        [f'Авторов: {len(nodes)}'],
+                        id='info-organization-authors',
+                        className='content__info-org'
+                    ),
+                    html.Div(
+                        [f'Публикаций: {num_publication}'],
+                        id='info-organization-publications',
+                        className='content__info-org content__info-org_pub'
+                    ),
+                    html.Div(
+                        f'Кластеров: {nodes['cluster'].max()}',
+                        id='info-organization-cluster',
+                        className='content__info-org content__info-org_cluster'
+                    ),
 
                     # Resize nodes
                     html.Div([
@@ -52,7 +80,7 @@ def base_layout(org_map):
                             options=size_options,
                             value=size_options[0]['value']
                         )
-                    ], id='content__size'),
+                    ], className='content__size dropdown'),
 
                     # Weight threshold
                     html.Div([
@@ -65,12 +93,10 @@ def base_layout(org_map):
                             step=1,
                             value=int(edges['weight'].min()),
                         )
-                    ], id='content__filter_edge'),
+                    ], className='content__edge-threshold dropdown'),
 
                     # Cluster search
                     html.Div([
-                        html.Div(f'Кластеров: {nodes['cluster'].max()}', id='content__cluster-info'),
-
                         html.Label('Поиск кластера:'),
                         html.Div([
                             dcc.Input(
@@ -81,12 +107,16 @@ def base_layout(org_map):
                                 placeholder='Введите номер',
                                 debounce=True
                             )
-                        ], id='content__cluster-search', className='search__input'),
+                        ], className='search__input'),
 
                         html.Div([
-                            html.Button('', id='cluster-button', className='search__button-item', n_clicks=0)
-                        ], id='content__cluster-button', className='search__button')
-                    ], id='content__cluster', className='search'),
+                            html.Button(
+                                '',
+                                id='cluster-button',
+                                n_clicks=0
+                            )
+                        ], className='search__button')
+                    ], className='content__cluster search'),
 
                     # Author search
                     html.Div([
@@ -98,48 +128,68 @@ def base_layout(org_map):
                                 placeholder='Иванов И.И.',
                                 debounce=True
                             )
-                        ], id='content__input-search', className='search__input'),
+                        ], className='search__input'),
 
                         html.Div([
-                            html.Button('', id='search-button', className='search__button-item', n_clicks=0)
-                        ], id='content__search-button', className='search__button')
-                    ], id='content__search', className='search'),
+                            html.Button(
+                                '',
+                                id='search-button',
+                                n_clicks=0
+                            )
+                        ], className='search__button')
+                    ], className='search'),
 
                     # Reset search
                     html.Div([
-                        html.Button('Сбросить поиск', id='reset-button', n_clicks=0)
-                    ], id='content__reset'),
+                        html.Button(
+                            'Сбросить поиск',
+                            id='reset-button',
+                            className='button',
+                            n_clicks=0
+                        )
+                    ], className='content__reset'),
 
                     # Show weights
                     html.Div([
                         dcc.Checklist(
                             id='show-weights',
-                            options=[{'label': 'Показывать веса рёбер', 'value': 'show'}],
+                            options=[{
+                                'label': 'Показывать веса рёбер',
+                                'value': 'show'
+                            }],
                             value=['show'],
                             labelStyle={'display': 'flex'}
                         ),
-                    ], id='content__checkbox'),
+                    ], className='content__checkbox'),
 
                     # Metrics
                     html.Div([
-                        html.Button('Анализ по метрике', id='color-button', n_clicks=0),
+                        html.Button(
+                            'Анализ по метрике',
+                            id='color-button',
+                            className='button',
+                            n_clicks=0
+                        ),
                         html.Div([
                             dcc.Dropdown(
                                 id='color-by-dropdown',
                                 options=color_options,
                                 placeholder='Выберите показатель',
                             ),
-                        ], id='color-by-container', style={'display': 'none'}),
+                        ], id='color-by-container', className='dropdown', style={'display': 'none'}),
 
                         html.Div([
-                            dcc.Store(id='node-color-limits', data={'vmin': None, 'vmax': None}),
+                            dcc.Store(
+                                id='node-color-limits',
+                                data={'vmin': None, 'vmax': None}
+                            ),
                             html.Label('Порог минимума:'),
                             dcc.Input(id='node-color-min', type='number'),
                             html.Label('Порог максимума:'),
                             dcc.Input(id='node-color-max', type='number'),
                         ], id='color-thresholds-container', style={'display': 'none'}),
-                    ], id='content__scale')
-                ], id='content__sidebar'),
+                    ], className='content__metric')
+                ], className='content__sidebar'),
 
                 # Graph
                 html.Div([
@@ -174,8 +224,8 @@ def base_layout(org_map):
                             n_clicks=0,
                         )
                     ], id='hover-tooltip'),
-                ], id='content__graph')
-            ], id='content'),
+                ], className='content__graph')
+            ], className='content'),
 
             # Overlay info
             dcc.Store(id='selected-item', data=None),
@@ -186,7 +236,7 @@ def base_layout(org_map):
             # Overlay
             html.Div([
                 html.Div([
-                    html.Div(['Выберите организацию'], id='overlay__header'),
+                    html.Div(['Выберите организацию'], className='overlay__header'),
 
                     dcc.Dropdown(
                         id='overlay-dropdown',
@@ -196,12 +246,22 @@ def base_layout(org_map):
                     ),
 
                     html.Div([
-                        html.Button('Выбрать', id='overlay-button', n_clicks=0),
-                        html.Button('Отмена', id='overlay-cancel-button', n_clicks=0),
-                    ], id='overlay__buttons')
-                ], id='overlay__container'),
+                        html.Button(
+                            'Выбрать',
+                            id='overlay-button',
+                            className='button',
+                            n_clicks=0
+                        ),
+                        html.Button(
+                            'Отмена',
+                            id='overlay-cancel-button',
+                            className='button',
+                            n_clicks=0
+                        ),
+                    ], className='overlay__buttons')
+                ], className='overlay__container'),
             ], id='overlay'),
-        ], id='container')
+        ], className='container')
     ])
 
 
@@ -221,10 +281,10 @@ app.layout = base_layout(org_map)
     Output('network-graph', 'elements'),
     Output('network-graph', 'stylesheet'),
 
-    Output('content__name_org', 'children'),
+    Output('name-organization', 'children'),
 
-    Output('content__info-authors', 'children'),
-    Output('content__info-pub', 'children'),
+    Output('info-organization-authors', 'children'),
+    Output('info-organization-publications', 'children'),
 
     Output('size-dropdown', 'value'),
 
@@ -232,7 +292,7 @@ app.layout = base_layout(org_map)
     Output('edge-threshold', 'max'),
     Output('edge-threshold', 'value'),
 
-    Output('content__cluster-info', 'children'),
+    Output('info-organization-cluster', 'children'),
     Output('cluster-filter', 'min'),
     Output('cluster-filter', 'max'),
     Output('cluster-filter', 'value'),
@@ -315,10 +375,10 @@ def update_graph_for_org(org_id):
         elements,  # network-graph elements
         stylesheet,  # network-graph stylesheet
 
-        org_name, # content__name_org children
+        org_name, # name-organization children
 
-        org_info_authors,  # content__info-authors children
-        org_info_pub,  # content__info-pub children
+        org_info_authors,  # info-organization-authors children
+        org_info_pub,  # info-organization-publications children
 
         default_size,  # size-dropdown value
 
@@ -326,7 +386,7 @@ def update_graph_for_org(org_id):
         max_w,  # edge-threshold max
         init_w,  # edge-threshold value
 
-        cluster_info_text,  # content__cluster-info children
+        cluster_info_text,  # info-organization-cluster children
         min_cluster,  # cluster-filter min
         max_cluster,  # cluster-filter max
         '',  # cluster-filter value
@@ -816,7 +876,7 @@ def show_pubs(n_clicks, item_label, org_id):
         data = load_cache_coauthors(org_id)
         coauthors_list = data.get(int(item_label[0][5:]), None)
 
-        header = html.Div(item_label[1], id='info-overlay-header')
+        header = html.Div(item_label[1], className='info-overlay__header')
 
         if not coauthors_list:
             table = [html.Div('Совместные публикации не найдены')]
@@ -832,7 +892,7 @@ def show_pubs(n_clicks, item_label, org_id):
                 html.Div([f'Год первой публикации: {df['Year'].min()}']),
                 html.Div([f'Ср. год публикаций: {round(df['Year'].mean(), 4)}']),
                 html.Div([f'Год последней публикации: {df['Year'].max()}']),
-            ], className='info-overlay-info')
+            ], className='info-overlay__description')
 
             table = html.Div([
                 html.Table([
@@ -845,14 +905,14 @@ def show_pubs(n_clicks, item_label, org_id):
                         ])
                         for _, row in df.iterrows()
                     ])
-                ], className='info-overlay-table'),
-            ], className='info-overlay-text')
+                ], className='info-overlay__table'),
+            ], className='info-overlay__text')
     else:
         # Search author
         data = load_cache_authors(org_id)
         author_dict = data.get(item_label[0].lower(), None)
 
-        header = html.Div(item_label[0], id='info-overlay-header')
+        header = html.Div(item_label[0], className='info-overlay__header')
 
         if not author_dict:
             table = [html.Div('Публикации не найдены')]
@@ -869,7 +929,7 @@ def show_pubs(n_clicks, item_label, org_id):
                 html.Div([f'Год первой публикации: {df['Year'].min()}']),
                 html.Div([f'Ср. год публикаций: {round(df['Year'].mean(), 4)}']),
                 html.Div([f'Год последней публикации: {df['Year'].max()}']),
-            ], className='info-overlay-info')
+            ], className='info-overlay__description')
 
             table = html.Div([
                 html.Table([
@@ -882,14 +942,14 @@ def show_pubs(n_clicks, item_label, org_id):
                         ])
                         for _, row in df.iterrows()
                     ])
-                ], className='info-overlay-table'),
-            ], className='info-overlay-text')
+                ], className='info-overlay__table'),
+            ], className='info-overlay__text')
 
     content = [
         header,
         description,
         table,
-        html.Button('Закрыть', id='info-overlay-close', n_clicks=0),
+        html.Button('Закрыть', id='info-overlay-close', className='info-overlay__close button', n_clicks=0),
     ]
     return {'display':'flex'}, content
 
