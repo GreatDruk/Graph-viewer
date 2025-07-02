@@ -303,7 +303,7 @@ def prepare_network_elements(org_id: str):
                 'label': 'data(weight)',
                 'font-size': '6px',
                 'text-rotation': 'autorotate',
-                'text-background-color': '#fff',
+                'text-background-color': '#EEECE3',
                 'text-background-opacity': 0.6,
                 'text-background-shape': 'roundrectangle'
             }
