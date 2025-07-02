@@ -42,20 +42,18 @@ def base_layout(org_map):
             html.Div([
                 # Sidebar
                 html.Div([
-                    # Select organization
+                    # Logo
+                    html.Div([
+                        html.Img(src='assets/logo.svg', alt='logo'),
+                        html.Div('AcademicNet')
+                    ], className='content__logo'),
+
+                    # Organization info
                     html.Div(
                         ['Университет Иннополис'],
                         id='name-organization',
                         className='content__name-org header'
                     ),
-                    html.Button(
-                        'Сменить организацию',
-                        id='open-overlay-button',
-                        className='content__change-org button',
-                        n_clicks=0
-                    ),
-
-                    # Organization info
                     html.Div(
                         [f'Авторов: {len(nodes)}'],
                         id='info-organization-authors',
@@ -70,6 +68,14 @@ def base_layout(org_map):
                         f'Кластеров: {nodes['cluster'].max()}',
                         id='info-organization-cluster',
                         className='content__info-org content__info-org_cluster'
+                    ),
+
+                    # Select organization
+                    html.Button(
+                        'Сменить организацию',
+                        id='open-overlay-button',
+                        className='content__change-org button',
+                        n_clicks=0
                     ),
 
                     # Resize nodes
@@ -206,7 +212,7 @@ def base_layout(org_map):
                         boxSelectionEnabled=True,
                         autounselectify=False,
                         wheelSensitivity=0.15,
-                        style = {'width': '100%', 'height': '100%', 'backgroundColor': '#f7f9ff'}
+                        style = {'width': '100%', 'height': '100%', 'backgroundColor': '#EEECE3'}
                     ),
 
                     # Legend
