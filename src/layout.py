@@ -1,12 +1,26 @@
-from src.data_prepare import prepare_network_elements
+"""
+Module: layout
+Defines the Dash app layout for graph viewer.
+"""
 
 from dash import dcc, html
 import dash_cytoscape as cyto
 
-def base_layout(org_map, DEFAULT_ORG):
-    # DATA LOADING
-    # Load default organization
-    data = prepare_network_elements(DEFAULT_ORG)
+from src.data_prepare import prepare_network_elements
+
+def base_layout(org_map, default_org: str) -> html.Div:
+    """
+    Build the base application layout.
+
+    Args:
+        org_map: List of organization options for the dropdown ({'label', 'value'}).
+        default_org: ID of the default organization to load on startup.
+
+    Returns:
+        A Dash HTML Div representing the full application UI.
+    """
+    # Load data for the default organization
+    data = prepare_network_elements(default_org)
 
     elements = data['elements']
     basic_stylesheet = data['stylesheet']
@@ -18,8 +32,8 @@ def base_layout(org_map, DEFAULT_ORG):
     num_publication = data['num_publication']
 
     return html.Div([
-        # Stores
-        dcc.Store(id='current-org', data=DEFAULT_ORG),
+        # Hidden stores for state management
+        dcc.Store(id='current-org', data=default_org),
         dcc.Store(id='overlay-visible', data=True),
 
         # Main container
@@ -233,7 +247,7 @@ def base_layout(org_map, DEFAULT_ORG):
                     dcc.Dropdown(
                         id='overlay-dropdown',
                         options=org_map,
-                        value=DEFAULT_ORG,
+                        value=default_org,
                         clearable=False
                     ),
 
