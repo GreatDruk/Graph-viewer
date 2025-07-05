@@ -1,3 +1,8 @@
+"""
+Module: orgs
+Load organization ID and names from a TSV file.
+"""
+
 import os
 import pandas as pd
 
