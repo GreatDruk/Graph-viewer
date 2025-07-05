@@ -1,10 +1,20 @@
-from src.data_prepare import prepare_network_elements, load_cache_authors, load_cache_coauthors
+"""
+Module: callbacks
+Defines all Dash callbacks for:
+  - updating the graph on organization change
+  - controlling the overlay (select org, cancel)
+  - client-side tools: sizing, filtering, search, metrics coloring
+  - rendering node/edge tooltips
+  - showing detailed info overlay for nodes and edges
+"""
 
 from dash import html, Input, Output, State, exceptions
 import pandas as pd
 
+from src.data_prepare import prepare_network_elements, load_cache_authors, load_cache_coauthors
+
 def get_callbacks(app, org_name_map):
-    # Update graph
+    # Update graph by 'Change organization'
     @app.callback(
         Output('network-graph', 'elements'),
         Output('network-graph', 'stylesheet'),
@@ -45,6 +55,10 @@ def get_callbacks(app, org_name_map):
         Input('current-org', 'data')
     )
     def update_graph_for_org(org_id):
+        """
+        Server-side callback. Reloads all graph data (elements, styles,
+        sidebar info, thresholds, etc.) when the selected organization changes.
+        """
         # Load new data
         data = prepare_network_elements(org_id)
         elements = data['elements']
@@ -137,10 +151,11 @@ def get_callbacks(app, org_name_map):
             '',  # hover-tooltip-content children
         )
 
-    # Overlay
+    # Overlay visibility control
     app.clientside_callback(
         """
         function(vis) {
+            // Show or hide the organization-selection overlay
             if (vis) {
                 return {'display': 'flex'};
             }
@@ -152,10 +167,11 @@ def get_callbacks(app, org_name_map):
         prevent_initial_call=True
     )
 
-    # Button select organization
+    # Button 'Select organization'
     app.clientside_callback(
         """
         function(n, sel) {
+            // On "Select" button click, update current-org and hide overlay
             if (n > 0) {
                 return [sel, false];
             }
@@ -171,10 +187,11 @@ def get_callbacks(app, org_name_map):
         prevent_initial_call=True
     )
 
-    # Button cancel
+    # Button 'Cancel'
     app.clientside_callback(
         """
         function(n) {
+            // On "Cancel", simply hide the overlay
             if (n > 0) {
                 return false;
             }
@@ -186,13 +203,13 @@ def get_callbacks(app, org_name_map):
         prevent_initial_call=True
     )
 
-    # Tools
+    # Client-side Tools: sizing, filtering, coloring, search
     app.clientside_callback(
         """
         function(sizeValue, edgeTh, person, showWeight, colorMetric, vmin, vmax, basic, sizeLimits, limitsStore) {
             let graphStyle = JSON.parse(JSON.stringify(basic));
 
-            // 1) Update nodes:
+            // 1) Resize nodes by selected metric
             const bounds = sizeLimits[sizeValue];
             const VM = bounds.min;
             const VX = bounds.max;
@@ -207,7 +224,7 @@ def get_callbacks(app, org_name_map):
                 });
             };
 
-            // 2) Filter edges:
+            // 2) Hide edges below threshold
             graphStyle.push({
                 selector: `edge[weight < ${edgeTh}]`,
                 style: { display: 'none' }
@@ -217,13 +234,13 @@ def get_callbacks(app, org_name_map):
                 style: { display: 'element' }
             });
 
-            // 3) Show weights:
+            // 3) Toggle edge labels
             graphStyle.push({
                 selector: 'edge',
                 style: { 'text-opacity': showWeight.length ? 1 : 0 }
             });
 
-            // 4) Metrics:
+            // 4) Color nodes by chosen metric
             if(colorMetric) {
                 let minVal = sizeLimits[colorMetric].min;
                 let maxVal = sizeLimits[colorMetric].max;
@@ -256,7 +273,7 @@ def get_callbacks(app, org_name_map):
                 }
             };
 
-            // 5) Search:
+            // 5) Highlight nodes matching search
             if(person) {
                 const low = person.toLowerCase();
                 graphStyle.push({
@@ -274,13 +291,13 @@ def get_callbacks(app, org_name_map):
         """,
         Output('network-graph', 'stylesheet', allow_duplicate=True),
         [
-        Input('size-dropdown', 'value'),
-        Input('edge-threshold', 'value'),
-        Input('person-search', 'value'),
-        Input('show-weights', 'value'),
-        Input('color-by-dropdown', 'value'),
-        Input('node-color-min', 'value'),
-        Input('node-color-max', 'value'),
+            Input('size-dropdown', 'value'),
+            Input('edge-threshold', 'value'),
+            Input('person-search', 'value'),
+            Input('show-weights', 'value'),
+            Input('color-by-dropdown', 'value'),
+            Input('node-color-min', 'value'),
+            Input('node-color-max', 'value'),
         ],
         [
             State('network-graph', 'stylesheet'),
@@ -290,7 +307,7 @@ def get_callbacks(app, org_name_map):
         prevent_initial_call=True
     )
 
-    # Select organization
+    # Button 'Change organization'
     app.clientside_callback(
         """
         function(n, current) {
@@ -313,6 +330,7 @@ def get_callbacks(app, org_name_map):
     app.clientside_callback(
         """
         function(clusterValue, elements, basic) {
+            // Highlight all nodes in the chosen cluster and lock others
             if (clusterValue === null || clusterValue === '') {
                 return [window.dash_clientside.no_update, window.dash_clientside.no_update];
             }
@@ -347,10 +365,11 @@ def get_callbacks(app, org_name_map):
         prevent_initial_call=True
     )
 
-    # Reset search
+    # Button 'Reset search'
     app.clientside_callback(
         """
         function(clickReset, basic) {
+            // On reset, restore original node colors and clear filters
             let graphStyle = JSON.parse(JSON.stringify(basic));
 
             if(clickReset) {
@@ -373,10 +392,11 @@ def get_callbacks(app, org_name_map):
         prevent_initial_call=True
     )
 
-    # Analize by metrics
+    # Button 'Analize by metrics'
     app.clientside_callback(
         """
         function(clickColor, basic) {
+            // Toggle display of the metric-coloring controls
             if (!clickColor) {
                 return [window.dash_clientside.no_update, window.dash_clientside.no_update, window.dash_clientside.no_update, window.dash_clientside.no_update];
             }
@@ -431,6 +451,7 @@ def get_callbacks(app, org_name_map):
     app.clientside_callback(
         """
         function(colorMetric, vmin, vmax) {
+            // Build and show legend labels when metric selected
             if (!colorMetric || vmin == null || vmax == null) {
                 return [{'display': 'none'}, window.dash_clientside.no_update];
             }
@@ -458,10 +479,11 @@ def get_callbacks(app, org_name_map):
         prevent_initial_call=True
     )
 
-    # Hover tooltip
+    # Hover tooltip (Node)
     app.clientside_callback(
         """
         function(mouseoverData, sizeValue, sizeOptions) {
+            // Show small tooltip with name, metric value and cluster on hover
             if (mouseoverData) {
                 const name = mouseoverData.id || '';
                 const val = mouseoverData[sizeValue] || '0';
@@ -496,10 +518,11 @@ def get_callbacks(app, org_name_map):
         prevent_initial_call=True
     )
 
-    # Nodes tooltip
+    # Tooltip (Nodes)
     app.clientside_callback(
         """
         function(nodeData, sizeOptions) {
+            // Show tooltip with name, all metric values, years and cluster on click
             if (nodeData) {
                 const name = nodeData.id || '';
                 const links = nodeData.Links || '0';
@@ -546,10 +569,11 @@ def get_callbacks(app, org_name_map):
         prevent_initial_call=True
     )
 
-    # Edges tooltip
+    # Tooltip (Edge)
     app.clientside_callback(
         """
         function(edgeData) {
+            // Show small tooltip with source-target and weight on click
             if (edgeData) {
                 const from = edgeData.source || '';
                 const to = edgeData.target || '';
@@ -584,7 +608,7 @@ def get_callbacks(app, org_name_map):
         prevent_initial_call=True
     )
 
-    # Info tooltip button
+    # Show Detailed Info Overlay
     @app.callback(
         Output('info-overlay','style'),
         Output('info-overlay-content','children'),
@@ -593,7 +617,12 @@ def get_callbacks(app, org_name_map):
         State('current-org', 'data'),
         prevent_initial_call=True
     )
-    def show_pubs(n_clicks, item_label, org_id):
+    def show_publications(n_clicks, item_label, org_id):
+        """
+        Server-side callback. Renders a full overlay listing
+        either an author's publications or co-authored works,
+        with summary statistics and sortable table.
+        """
         if not n_clicks:
             raise exceptions.PreventUpdate
         
@@ -681,10 +710,11 @@ def get_callbacks(app, org_name_map):
         ]
         return {'display':'flex'}, content
 
-    # Button close
+    # Button 'Close'
     app.clientside_callback(
         """
         function(n) {
+            // Hide the detailed info overlay on close button
             if (n > 0) {
                 return {'display':'none'};
             }
