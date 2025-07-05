@@ -1,22 +1,50 @@
+"""
+Module: data_prepare
+
+Provides functions to load, preprocess and cache network elements
+for the given organization. Builds node & edge data structures
+for Dash Cytoscape, as well as author/co-author maps.
+
+Cache files:
+ - cache.pkl           : full result dict from prepare_network_elements
+ - cache_authors.pkl   : mapping author  -> list of their publications
+ - cache_coauthors.pkl : mapping edge_id -> list of joint publications
+"""
+
+import os
+import pickle
+import itertools
+import pandas as pd
+from datetime import datetime
+
 from src.thesaurus_builder import build_author_thesaurus
 
-import pandas as pd
-import os.path
-import pickle
-from datetime import datetime
-import itertools
+# Constants for file names under org_data/processed/{org_id}/
+CACHE_FILE = 'cache.pkl'
+AUTHORS_CACHE_FILE = 'cache_authors.pkl'
+COAUTHORS_CACHE_FILE = 'cache_coauthors.pkl'
+THESAURUS_FILE = 'thesaurus_authors.txt'
+PUBLICATIONS_FILE = 'publications.csv'
+NODES_FILE = 'map.txt'
+EDGES_FILE = 'network.txt'
+
 
 def get_source_paths(org_id: str):
+    """Return full paths to all data files for this org"""
     base_path = f'org_data/processed/{org_id}'
     return {
-        'thesaurus': os.path.join(base_path, 'thesaurus_authors.txt'),
-        'publications': os.path.join(base_path, 'publications.csv'),
-        'nodes': os.path.join(base_path, 'map.txt'),
-        'edges': os.path.join(base_path, 'network.txt'),
+        'thesaurus': os.path.join(base_path, THESAURUS_FILE),
+        'publications': os.path.join(base_path, PUBLICATIONS_FILE),
+        'nodes': os.path.join(base_path, NODES_FILE),
+        'edges': os.path.join(base_path, EDGES_FILE),
     }
 
 
 def is_cache(cache_path: str, source_paths: dict) -> bool:
+    """
+    Check if 'cache_path' and all cache files exist.
+    Returns False if cache is missing.
+    """
     if not os.path.exists(cache_path):
         return False
 
@@ -28,30 +56,38 @@ def is_cache(cache_path: str, source_paths: dict) -> bool:
 
 
 def load_cache(cache_path: str):
+    """Load and return a cache"""
     with open(cache_path, 'rb') as f:
         return pickle.load(f)
     
 
 def load_cache_authors(org_id: str) -> dict:
-    path = f'org_data/processed/{org_id}/cache_authors.pkl'
+    """Load and return a authors cache"""
+    path = f'org_data/processed/{org_id}/{AUTHORS_CACHE_FILE}'
     with open(path, 'rb') as f:
         return pickle.load(f)
 
 
 def load_cache_coauthors(org_id: str) -> dict:
-    path = f'org_data/processed/{org_id}/cache_coauthors.pkl'
+    """Load and return a coauthors cache"""
+    path = f'org_data/processed/{org_id}/{COAUTHORS_CACHE_FILE}'
     with open(path, 'rb') as f:
         return pickle.load(f)
 
 
 def save_cache(cache_path: str, data):
+    """Save 'data' to 'path' as pickle, creating folders as needed."""
     os.makedirs(os.path.dirname(cache_path), exist_ok=True)
     with open(cache_path, 'wb') as f:
         pickle.dump(data, f)
 
 
 def load_thesaurus(org_id: str) -> dict:
-    thesaurus_path = f'org_data/processed/{org_id}/thesaurus_authors.txt'
+    """
+    Check thesaurus exists (build if not),
+    load and return dict[label -> replace_by].
+    """
+    thesaurus_path = f'org_data/processed/{org_id}/{THESAURUS_FILE}'
     if not os.path.exists(thesaurus_path):
         build_author_thesaurus(org_id=org_id)
 
@@ -65,11 +101,13 @@ def load_thesaurus(org_id: str) -> dict:
 
 
 def load_publication(org_id: str) -> pd.DataFrame:
-    return pd.read_csv(f'org_data/processed/{org_id}/publications.csv')
+    """Load and return a publications"""
+    return pd.read_csv(f'org_data/processed/{org_id}/{PUBLICATIONS_FILE}')
 
 
 def load_nodes(org_id: str) -> pd.DataFrame:
-    nodes = pd.read_csv(f'org_data/processed/{org_id}/map.txt', sep='\t')
+    """Load and return a nodes map"""
+    nodes = pd.read_csv(f'org_data/processed/{org_id}/{NODES_FILE}', sep='\t')
 
     rename_dict = {
         'weight<Links>': 'Links',
@@ -86,11 +124,16 @@ def load_nodes(org_id: str) -> pd.DataFrame:
 
 
 def load_edges(org_id: str) -> pd.DataFrame:
-    return pd.read_csv(f'org_data/processed/{org_id}/network.txt', sep='\t',
+    """Load and return a edges map"""
+    return pd.read_csv(f'org_data/processed/{org_id}/{EDGES_FILE}', sep='\t',
                          names=['first_author','second_author','weight'], header=None)
 
 
 def standardize_author_names(names: str, replace_dict: dict) -> list:
+    """
+    Given raw 'Authors' column of semicolon-delimited strings,
+    explode to individual lowercase names with thesaurus replacement.
+    """
     arr_authors = [name.replace('et al.', '').strip() for name in names.split(';')]
     res = []
     for name in arr_authors:
@@ -99,6 +142,11 @@ def standardize_author_names(names: str, replace_dict: dict) -> list:
 
 
 def build_authors_with_inform(publication: pd.DataFrame, replace_dict: dict) -> pd.DataFrame:
+    """
+    Build DataFrame indexed by author, with aggregated lists:
+    - Title, Year, Source title, Cited by, Link
+    plus computed columns First_pub_year, Last_pub_year.
+    """
     df = (
         publication.assign(
             Authors = lambda df: df['Authors'].apply(
@@ -124,6 +172,12 @@ def build_authors_with_inform(publication: pd.DataFrame, replace_dict: dict) -> 
 
 
 def build_coauthors_map(publication: pd.DataFrame, replace_dict: dict, edges_records: list) -> dict:
+    """
+    Build a mapping edge_id -> list of joint publications.
+    - standardizes authors in each paper
+    - for each unordered pair that exists in edges_records,
+      collects (Title, Year, Source title, Cited by, Link)
+    """
     df = (
         publication.assign(
             Authors = lambda df: df['Authors'].apply(
@@ -158,17 +212,29 @@ def build_coauthors_map(publication: pd.DataFrame, replace_dict: dict, edges_rec
 
 
 def scale_coordinates(series: pd.Series, new_min: int = 0, new_max: int = 2000) -> pd.Series:
+    """
+    Linearly scale 'series' values into [new_min, new_max].
+    """
     old_min = series.min()
     old_max = series.max()
     return new_min + (series - old_min) * (new_max - new_min) / (old_max - old_min)
 
 
 def prepare_network_elements(org_id: str):
-    # Cache
+    """
+    Main function: returns a dict with keys:
+      - elements: list of cyto elements
+      - stylesheet: base stylesheet
+      - size_options, color_options, metrics_bounds
+      - nodes, edges, num_publication
+    Caches entire result in cache.pkl, and separately
+    author/coauthor maps.
+    """
+    # Check cache
     source_paths = get_source_paths(org_id)
-    cache_path = f'org_data/processed/{org_id}/cache.pkl'
-    cache_path_authors = f'org_data/processed/{org_id}/cache_authors.pkl'
-    cache_path_coauthors = f'org_data/processed/{org_id}/cache_coauthors.pkl'
+    cache_path = f'org_data/processed/{org_id}/{CACHE_FILE}'
+    cache_path_authors = f'org_data/processed/{org_id}/{AUTHORS_CACHE_FILE}'
+    cache_path_coauthors = f'org_data/processed/{org_id}/{COAUTHORS_CACHE_FILE}'
     if is_cache(cache_path, source_paths) and os.path.exists(cache_path_authors) and os.path.exists(cache_path_coauthors):
         try:
             return load_cache(cache_path)
