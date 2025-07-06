@@ -251,24 +251,27 @@ def get_callbacks(app, org_name_map):
                 if (minVal <= maxVal) {
                     const midVal = (minVal + maxVal) / 2;
                     graphStyle.push({
-                        selector: `node[${colorMetric} <= ${midVal}]`,
+                        selector: `node[${colorMetric} <= ${midVal}][${colorMetric} >= ${minVal}]`,
                         style: {
-                            'background-color': `mapData(${colorMetric}, ${minVal}, ${midVal}, #440154, #26828E)`
+                            'background-color': `mapData(${colorMetric}, ${minVal}, ${midVal}, #440154, #26828E)`,
+                            'display': 'element'
                         }
                     });
                     graphStyle.push({
-                        selector: `node[${colorMetric} > ${midVal}]`,
+                        selector: `node[${colorMetric} > ${midVal}][${colorMetric} <= ${maxVal}]`,
                         style: {
-                            'background-color': `mapData(${colorMetric}, ${midVal}, ${maxVal}, #26828E, #FDE725)`
+                            'background-color': `mapData(${colorMetric}, ${midVal}, ${maxVal}, #26828E, #FDE725)`,
+                            'display': 'element'
                         }
                     });
+
                     graphStyle.push({
                         selector: `node[${colorMetric} < ${vmin}]`,
-                        style: { 'background-color': '#d7ecff' }
+                        style: { 'display': 'none' }
                     });
                     graphStyle.push({
                         selector: `node[${colorMetric} > ${vmax}]`,
-                        style: { 'background-color': '#d7ecff' }
+                        style: { 'display': 'none' }
                     });
                 }
             };
@@ -406,7 +409,10 @@ def get_callbacks(app, org_name_map):
             }
             graphStyle.push({
                 selector: `node[label]`,
-                style: { 'background-color': 'data(color)' }
+                style: {
+                    'background-color': 'data(color)',
+                    'display': 'element'
+                }
             });
             return [graphStyle, {'display': 'none'}, {'display': 'none'}, ''];
         }
