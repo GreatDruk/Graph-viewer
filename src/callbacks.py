@@ -38,6 +38,7 @@ def get_callbacks(app, org_name_map):
         Output('person-search', 'value'),
 
         Output('show-weights', 'value'),
+        Output('show-isolates', 'value'),
 
         Output('color-by-dropdown', 'value'),
         Output('node-color-min', 'value'),
@@ -136,6 +137,7 @@ def get_callbacks(app, org_name_map):
             '', # person-search value
 
             default_show_weights,  # show-weights value
+            default_show_weights,  # show-isolates value
 
             default_color_value,  # color-by-dropdown value
             None,  # node-color-min value
@@ -206,7 +208,7 @@ def get_callbacks(app, org_name_map):
     # Client-side Tools: sizing, filtering, coloring, search
     app.clientside_callback(
         """
-        function(sizeValue, edgeTh, person, showWeight, colorMetric, vmin, vmax, basic, sizeLimits, limitsStore) {
+        function(sizeValue, edgeTh, person, showWeight, showIsolates, colorMetric, vmin, vmax, basic, sizeLimits, limitsStore) {
             let graphStyle = JSON.parse(JSON.stringify(basic));
 
             // 1) Resize nodes by selected metric
@@ -227,20 +229,30 @@ def get_callbacks(app, org_name_map):
             // 2) Hide edges below threshold
             graphStyle.push({
                 selector: `edge[weight < ${edgeTh}]`,
-                style: { display: 'none' }
+                style: { 'display': 'none' }
             });
             graphStyle.push({
                 selector: `edge[weight >= ${edgeTh}]`,
-                style: { display: 'element' }
+                style: { 'display': 'element' }
             });
 
-            // 3) Toggle edge labels
+            // 3) Show edge labels
             graphStyle.push({
                 selector: 'edge',
                 style: { 'text-opacity': showWeight.length ? 1 : 0 }
             });
 
-            // 4) Color nodes by chosen metric
+            // 4) Show isolate nodes
+            graphStyle.push({
+                selector: `node[max_edge_weight < ${edgeTh}]`,
+                style: { 'display': showIsolates.length ? 'element' : 'none' }
+            });
+            graphStyle.push({
+                selector: `node[max_edge_weight >= ${edgeTh}]`,
+                style: { 'display': 'element'}
+            });
+
+            // 5) Color nodes by chosen metric
             if(colorMetric) {
                 let minVal = sizeLimits[colorMetric].min;
                 let maxVal = sizeLimits[colorMetric].max;
@@ -276,7 +288,7 @@ def get_callbacks(app, org_name_map):
                 }
             };
 
-            // 5) Highlight nodes matching search
+            // 6) Highlight nodes matching search
             if(person) {
                 const low = person.toLowerCase();
                 graphStyle.push({
@@ -298,6 +310,7 @@ def get_callbacks(app, org_name_map):
             Input('edge-threshold', 'value'),
             Input('person-search', 'value'),
             Input('show-weights', 'value'),
+            Input('show-isolates', 'value'),
             Input('color-by-dropdown', 'value'),
             Input('node-color-min', 'value'),
             Input('node-color-max', 'value'),
