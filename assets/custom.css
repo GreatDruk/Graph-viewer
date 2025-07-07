@@ -136,6 +136,7 @@ input {
 .content__logo img {
 	height: 95px;
 	margin-top: -15px;
+	cursor: pointer;
 }
 .content__logo div {
 	font-size: 21px;
@@ -386,7 +387,7 @@ input {
 }
 
 /* Info */
-#info-overlay {
+.overlay {
 	display: none;
 	position: absolute;
 	top: 0;
@@ -400,11 +401,6 @@ input {
 	z-index: 8;
 }
 #info-overlay-content {
-	background-color: #373539;
-	color: #EEECE3;
-	padding: 20px;
-	border-radius: 16px;
-	min-width: 400px;
 	max-width: 800px;
 }
 .info-overlay__header {
@@ -446,17 +442,7 @@ input {
 
 /* Overlay */
 #overlay {
-	position: absolute;
-	top: 0;
-	right: 0;
-	bottom: 0;
-	left: 0;
-	background-color: rgba(55, 53, 57, 0.3);
 	display: flex;
-	align-items: center;
-	justify-content: center;
-	backdrop-filter: blur(3px);
-	z-index: 8;
 }
 .overlay__container {
 	background-color: #373539;
@@ -470,12 +456,11 @@ input {
 	font-size: 18px;
 }
 .overlay__buttons {
-	width: 48%;
 	display: flex;
-	justify-content: space-between;
 }
 .overlay__buttons button {
-	width: 90px;
-	margin-top: 20px;
-	margin-bottom: 0;
+	width: max-content;
+	min-width: 83px;
+	margin: 20px 15px 0 0;
+	padding: 0 15px;
 }
