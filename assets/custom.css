@@ -231,6 +231,9 @@ input {
 .content__checkbox input {
 	margin-right: 7px;
 }
+.content__checkbox #show-isolates label {
+	margin-top: -13px;
+}
 /* Metric */
 .content__metric {
 	display: flex;
