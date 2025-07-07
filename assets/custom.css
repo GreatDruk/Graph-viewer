@@ -6,6 +6,53 @@ body {
 	font-size: 16px;
 	background-color: #EEECE3;
 }
+/* Loading */
+._dash-loading{
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100vh;
+	z-index: 10;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	backdrop-filter: blur(3px);
+	background-color: rgba(238, 236, 227, 0.7);
+	font-size: 21px;
+	color: #373539;
+}
+._dash-loading::before {
+	content: '';
+	display: block;
+	height: 110px;
+	width: 110px;
+	margin-left: -3px;
+	margin-bottom: -6px;
+	background: url('/assets/preload-logo.svg') no-repeat center;
+	background-size: contain;
+}
+._dash-loading::after {
+	position: absolute;
+	margin-top: -35px;
+	content: '';
+  	display: block;
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	border: 3px solid #EEECE3;
+	border-top: 3px solid #373539;
+	animation: rotation 1s linear infinite;
+}
+@keyframes rotation {
+	from{
+		transform: rotate(0deg);
+	}
+	to{
+		transform: rotate(360deg);
+	}
+}
 label {
 	width: 100%;
 	margin-bottom: 7px;
