@@ -166,6 +166,15 @@ def base_layout(org_map, default_org: str) -> html.Div:
                             value=['show'],
                             labelStyle={'display': 'flex'}
                         ),
+                        dcc.Checklist(
+                            id='show-isolates',
+                            options=[{
+                                'label': 'Показывать вершины без рёбер', 
+                                'value': 'show'
+                            }],
+                            value=['show'],
+                            labelStyle={'display': 'flex'}
+                        ),
                     ], className='content__checkbox'),
 
                     # Metrics
