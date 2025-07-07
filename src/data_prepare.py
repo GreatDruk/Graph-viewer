@@ -267,6 +267,18 @@ def prepare_network_elements(org_id: str):
         lambda ID: nodes.loc[nodes['id'] == ID, 'label'].iloc[0]
     )
 
+    # Calculate max edge weight for each node
+    max_edges = (
+        pd.concat([
+            edges[['first_author','weight']].rename(columns={'first_author':'label'}),
+            edges[['second_author','weight']].rename(columns={'second_author':'label'})
+        ], ignore_index=True)
+        .groupby('label')['weight']
+        .max()
+        .to_dict()
+    )
+    nodes['max_edge_weight'] = nodes['label'].map(lambda lbl: max_edges.get(lbl, 0))
+
     # Impossible years
     YEAR_NOW = datetime.now().year
     nodes['Avg_pub_year'] = nodes['Avg_pub_year'].apply(
@@ -319,6 +331,7 @@ def prepare_network_elements(org_id: str):
                 'Avg_norm_citations': node['Avg_norm_citations'],
                 'color': node['node_color'],
                 'cluster': node['cluster'],
+                'max_edge_weight': node['max_edge_weight'],
             },
             'position': {'x': node['x'], 'y': node['y']}
         }
