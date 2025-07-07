@@ -153,36 +153,20 @@ def get_callbacks(app, org_name_map):
             '',  # hover-tooltip-content children
         )
 
-    # Overlay visibility control
-    app.clientside_callback(
-        """
-        function(vis) {
-            // Show or hide the organization-selection overlay
-            if (vis) {
-                return {'display': 'flex'};
-            }
-            return {'display': 'none'};
-        }
-        """,
-        Output('overlay', 'style'),
-        Input('overlay-visible', 'data'),
-        prevent_initial_call=True
-    )
-
     # Button 'Select organization'
     app.clientside_callback(
         """
         function(n, sel) {
             // On "Select" button click, update current-org and hide overlay
             if (n > 0) {
-                return [sel, false];
+                return [sel, {'display': 'none'}];
             }
             return [window.dash_clientside.no_update, window.dash_clientside.no_update];
         }
         """,
         [
             Output('current-org', 'data'),
-            Output('overlay-visible', 'data'),
+            Output('overlay', 'style'),
         ],
         Input('overlay-button', 'n_clicks'),
         State('overlay-dropdown', 'value'),
@@ -195,16 +179,83 @@ def get_callbacks(app, org_name_map):
         function(n) {
             // On "Cancel", simply hide the overlay
             if (n > 0) {
-                return false;
+                return {'display': 'none'};
             }
             return window.dash_clientside.no_update;
         }
         """,
-        Output('overlay-visible', 'data', allow_duplicate=True),
+        Output('overlay', 'style', allow_duplicate=True),
         Input('overlay-cancel-button', 'n_clicks'),
         prevent_initial_call=True
     )
 
+    # Button 'Change organization'
+    app.clientside_callback(
+        """
+        function(n, current) {
+            if (n > 0) {
+                return [{'display': 'flex'}, current];
+            }
+            return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+        }
+        """,
+        [
+            Output('overlay', 'style', allow_duplicate=True),
+            Output('overlay-dropdown', 'value'),
+        ],
+        Input('open-overlay-button', 'n_clicks'),
+        State('current-org', 'data'),
+        prevent_initial_call=True
+    )
+
+    # Click on logo
+    app.clientside_callback(
+        """
+        function(n_clicks) {
+            // Open confirmation dialog
+            if (n_clicks > 0) {
+                return {'display': 'flex'};
+            }
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('dialog-overlay', 'style'),
+        Input('app-logo', 'n_clicks'),
+        prevent_initial_call=True
+    )
+
+    # Button 'Yes' (dialog)
+    app.clientside_callback(
+        """
+        function(n_clicks) {
+            // On "Yes" button click, reload site
+            if (n_clicks > 0) {
+                window.location.reload();
+            }
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('dialog-overlay', 'children'),
+        Input('dialog-yes-button', 'n_clicks'),
+        prevent_initial_call=True
+    )
+
+    # Button 'Cancel' (dialog)
+    app.clientside_callback(
+        """
+        function(n_clicks) {
+            // On "Cancel", simply hide the dialog
+            if (n_clicks > 0) {
+                return {'display': 'none'};
+            }
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('dialog-overlay', 'style', allow_duplicate=True),
+        Input('dialog-cancel-button', 'n_clicks'),
+        prevent_initial_call=True
+    )
+    
     # Client-side Tools: sizing, filtering, coloring, search
     app.clientside_callback(
         """
@@ -320,25 +371,6 @@ def get_callbacks(app, org_name_map):
             State('size-limits', 'data'),
             State('node-color-limits','data'),
         ],
-        prevent_initial_call=True
-    )
-
-    # Button 'Change organization'
-    app.clientside_callback(
-        """
-        function(n, current) {
-            if (n > 0) {
-                return [true, current];
-            }
-            return [window.dash_clientside.no_update, window.dash_clientside.no_update];
-        }
-        """,
-        [
-            Output('overlay-visible', 'data', allow_duplicate=True),
-            Output('overlay-dropdown', 'value'),
-        ],
-        Input('open-overlay-button', 'n_clicks'),
-        State('current-org', 'data'),
         prevent_initial_call=True
     )
 
