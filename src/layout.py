@@ -34,7 +34,6 @@ def base_layout(org_map, default_org: str) -> html.Div:
     return html.Div([
         # Hidden stores for state management
         dcc.Store(id='current-org', data=default_org),
-        dcc.Store(id='overlay-visible', data=True),
 
         # Main container
         html.Div([
@@ -44,7 +43,7 @@ def base_layout(org_map, default_org: str) -> html.Div:
                 html.Div([
                     # Logo
                     html.Div([
-                        html.Img(src='assets/logo.svg', alt='logo'),
+                        html.Img(src='assets/logo.svg', alt='logo', id='app-logo', n_clicks=0),
                         html.Div('AcademicNet')
                     ], className='content__logo'),
 
@@ -242,11 +241,35 @@ def base_layout(org_map, default_org: str) -> html.Div:
                 ], className='content__graph')
             ], className='content'),
 
+            # Overlay dialog
+            html.Div([
+                html.Div([
+                    html.Div(['Перезагрузить сайт?'], className='overlay__header'),
+
+                    html.Div(['Все изменения будут удалены.']),
+
+                    html.Div([
+                        html.Button(
+                            'Да',
+                            id='dialog-yes-button',
+                            className='button',
+                            n_clicks=0
+                        ),
+                        html.Button(
+                            'Отмена',
+                            id='dialog-cancel-button',
+                            className='button',
+                            n_clicks=0
+                        ),
+                    ], className='overlay__buttons')
+                ], id='dialog-overlay-content', className='overlay__container')
+            ], id='dialog-overlay', className='overlay'),
+
             # Overlay info
             dcc.Store(id='selected-item', data=None),
             html.Div([
-                html.Div(id='info-overlay-content')
-            ], id='info-overlay'),
+                html.Div(id='info-overlay-content', className='overlay__container')
+            ], id='info-overlay', className='overlay'),
 
             # Overlay
             html.Div([
@@ -275,6 +298,6 @@ def base_layout(org_map, default_org: str) -> html.Div:
                         ),
                     ], className='overlay__buttons')
                 ], className='overlay__container'),
-            ], id='overlay'),
+            ], id='overlay', className='overlay'),
         ], className='container')
     ])
