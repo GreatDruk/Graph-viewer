@@ -118,7 +118,7 @@ input {
 	overflow-y: scroll;
 	display: flex;
 	flex-direction: column;
-	padding: 20px 20px 0;
+	padding: 0 20px;
 	background-color: #373539;
 	color: #EEECE3;
     -ms-overflow-style: none;
@@ -129,13 +129,17 @@ input {
 }
 /* Logo */
 .content__logo {
+    position: sticky;
+    top: 0;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+    background-color: #373539;
+    z-index: 9999;
 }
 .content__logo img {
 	height: 95px;
-	margin-top: -15px;
+	padding-top: 5px;
 	cursor: pointer;
 }
 .content__logo div {
