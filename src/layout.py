@@ -34,6 +34,8 @@ def base_layout(org_map, default_org: str) -> html.Div:
     return html.Div([
         # Hidden stores for state management
         dcc.Store(id='current-org', data=default_org),
+        dcc.Store(id='slides-store', data=[]),
+        dcc.Store(id='active-slide', data='full'), 
 
         # Main container
         html.Div([
@@ -202,7 +204,17 @@ def base_layout(org_map, default_org: str) -> html.Div:
                             html.Label('Порог максимума:'),
                             dcc.Input(id='node-color-max', type='number'),
                         ], id='color-thresholds-container', style={'display': 'none'}),
-                    ], className='content__metric')
+                    ], className='content__metric'),
+
+                    # Add new canvas
+                    html.Div([
+                        html.Button(
+                            'Новый холст',
+                            id='create-new-canvas',
+                            className='button',
+                            n_clicks=0
+                        )
+                    ], className='content__new_canvas'),
                 ], className='content__sidebar'),
 
                 # Graph
@@ -211,6 +223,11 @@ def base_layout(org_map, default_org: str) -> html.Div:
                         id='size-limits',
                         data=metrics_bounds
                     ),
+
+                    dcc.Tabs(id='graph-tabs', value='full', children=[
+                        dcc.Tab(label='Полный граф', value='full'),
+                    ]),
+
                     cyto.Cytoscape(
                         id='network-graph',
                         elements=elements,
@@ -220,7 +237,7 @@ def base_layout(org_map, default_org: str) -> html.Div:
                         boxSelectionEnabled=True,
                         autounselectify=False,
                         wheelSensitivity=0.15,
-                        style = {'width': '100%', 'height': '100%', 'backgroundColor': '#EEECE3'}
+                        style = {'width': '100%', 'backgroundColor': '#EEECE3'}
                     ),
 
                     # Legend
