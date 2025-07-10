@@ -316,5 +316,11 @@ def base_layout(org_map, default_org: str) -> html.Div:
                     ], className='overlay__buttons')
                 ], className='overlay__container'),
             ], id='overlay', className='overlay'),
+
+            # Preloader
+            html.Div(
+                id='preloader',
+                className='container__preloader',
+            ),
         ], className='container')
     ])

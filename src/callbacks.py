@@ -53,6 +53,8 @@ def get_callbacks(app, org_name_map):
         Output('hover-tooltip', 'style'),
         Output('hover-tooltip-content', 'children'),
 
+        Output('preloader', 'style'),
+
         Input('current-org', 'data')
     )
     def update_graph_for_org(org_id):
@@ -118,7 +120,7 @@ def get_callbacks(app, org_name_map):
             elements,  # network-graph elements
             stylesheet,  # network-graph stylesheet
 
-            org_name, # name-organization children
+            org_name,  # name-organization children
 
             org_info_authors,  # info-organization-authors children
             org_info_pub,  # info-organization-publications children
@@ -134,7 +136,7 @@ def get_callbacks(app, org_name_map):
             max_cluster,  # cluster-filter max
             '',  # cluster-filter value
 
-            '', # person-search value
+            '',  # person-search value
 
             default_show_weights,  # show-weights value
             default_show_weights,  # show-isolates value
@@ -151,6 +153,8 @@ def get_callbacks(app, org_name_map):
             hidden_style,  # color-legend style
             hidden_style,  # hover-tooltip style
             '',  # hover-tooltip-content children
+
+            hidden_style,  # preloader style
         )
 
     # Button 'Select organization'
@@ -159,14 +163,15 @@ def get_callbacks(app, org_name_map):
         function(n, sel) {
             // On "Select" button click, update current-org and hide overlay
             if (n > 0) {
-                return [sel, {'display': 'none'}];
+                return [sel, {'display': 'none'}, {'display': 'flex'}];
             }
-            return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+            return [window.dash_clientside.no_update, window.dash_clientside.no_update, window.dash_clientside.no_update];
         }
         """,
         [
             Output('current-org', 'data'),
             Output('overlay', 'style'),
+            Output('preloader', 'style', allow_duplicate=True),
         ],
         Input('overlay-button', 'n_clicks'),
         State('overlay-dropdown', 'value'),
