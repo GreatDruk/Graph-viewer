@@ -34,8 +34,11 @@ def base_layout(org_map, default_org: str) -> html.Div:
     return html.Div([
         # Hidden stores for state management
         dcc.Store(id='current-org', data=default_org),
-        dcc.Store(id='slides-store', data=[]),
-        dcc.Store(id='active-slide', data='full'), 
+        dcc.Store(id='canvas-store', data={
+            'full': data['elements'],
+            'canvases': []
+        }),
+        dcc.Store(id='active-canvas', data='full'), 
 
         # Main container
         html.Div([
@@ -213,7 +216,8 @@ def base_layout(org_map, default_org: str) -> html.Div:
                             id='create-new-canvas',
                             className='button',
                             n_clicks=0
-                        )
+                        ),
+                        html.Div(id='canvas-error', className='error__mini')
                     ], className='content__new_canvas'),
                 ], className='content__sidebar'),
 
@@ -224,13 +228,11 @@ def base_layout(org_map, default_org: str) -> html.Div:
                         data=metrics_bounds
                     ),
 
-                    dcc.Tabs(id='graph-tabs', value='full', children=[
-                        dcc.Tab(label='Полный граф', value='full'),
-                    ]),
+                    dcc.Tabs(id='graph-tabs', value='full'),
 
                     cyto.Cytoscape(
                         id='network-graph',
-                        elements=elements,
+                        elements=[],
                         layout={'name': 'preset'},
                         stylesheet=basic_stylesheet,
                         userPanningEnabled=True,
