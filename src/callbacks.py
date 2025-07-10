@@ -781,3 +781,154 @@ def get_callbacks(app, org_name_map):
         Input('info-overlay-close', 'n_clicks'),
         prevent_initial_call=True
     )
+
+    # Create new canvas
+    app.clientside_callback(
+        """
+        function(n_clicks, selectedNodes, store) {
+            if (n_clicks < 1) {
+                return [window.dash_clientside.no_update, {'display': 'none'}, ''];
+            }
+
+            // Unpack store
+            const full = (store && store.full) || [];
+            const canvases = (store && store.canvases) || [];
+
+            // Error: already 30 canvas 
+            if (canvases.length >= 30) {
+                return [window.dash_clientside.no_update, {'display': 'flex'}, 'Достигнут лимит - уже создано 30 холстов'];
+            }
+
+            // Error: no one selected nodes
+            if (!selectedNodes || selectedNodes.length === 0) {
+                return [window.dash_clientside.no_update, {'display': 'flex'}, 'Выберите хотя бы одну вершину'];
+            }
+
+            // Error: >300 nodes
+            if (selectedNodes.length > 300) {
+                return [window.dash_clientside.no_update, {'display': 'flex'}, 'Превышен лимит - выбрано более 300 вершин'];
+            }
+
+            // Get ID selected nodes
+            const selected = selectedNodes.slice(0, 300);
+            const nodesIDs = selected.map(n => n.id);
+
+            // Filter nodes & edges
+            const nodes = full.filter(e => e.data && nodesIDs.includes(e.data.id)).map(e => ({ ...e }));
+            const edges = full.filter(e => e.data && e.data.source
+                            && nodesIDs.includes(e.data.source)
+                            && nodesIDs.includes(e.data.target))
+                            .map(e => ({ ...e }));
+
+            // Save positions only for selected nodes
+            const positions = {};
+            nodes.forEach(n => {
+                positions[n.id] = n.position;
+            });
+
+            // Create new object canvas
+            const idx = canvases.length + 1;
+            const newCanvas = {
+                id: `canvas-${idx}`,
+                name: `${idx}`,
+                elements: nodes.concat(edges),
+                positions: positions
+            };
+
+            return [
+                {
+                    full: full,
+                    canvases: canvases.concat(newCanvas).slice(-30)
+                }, 
+                {
+                    'display': 'none'
+                },
+                ''
+            ];
+        }
+        """,
+        [
+            Output('canvas-store', 'data'),
+            Output('canvas-error', 'style'),
+            Output('canvas-error', 'children')
+        ],
+        Input('create-new-canvas', 'n_clicks'),
+        [
+            State('network-graph', 'selectedNodeData'),
+            State('canvas-store', 'data'),
+        ],
+        prevent_initial_call=True
+    )
+
+    # Add new Tab
+    app.clientside_callback(
+        """
+        function(store) {
+            // create Tab object
+            function makeTab(label, value) {
+                return {
+                    type: 'Tab',
+                    namespace: 'dash_core_components',
+                    props: { label: label, value: value }
+                };
+            }
+
+            const slides = (store && store.canvases) || [];
+
+            const tabs = [ makeTab('Полный граф', 'full') ];
+
+            for (let c of slides) {
+                tabs.push(makeTab(c.name, c.id));
+            }
+
+            return tabs;
+        }
+        """,
+        Output('graph-tabs', 'children'),
+        Input('canvas-store', 'data')
+    )
+
+    # Save selected tab in active-canvas
+    app.clientside_callback(
+        """
+        function(tabValue) {
+            return tabValue;
+        }
+        """,
+        Output('active-canvas', 'data'),
+        Input('graph-tabs', 'value')
+    )
+
+    # Insert into Cytoscape elements & positions
+    app.clientside_callback(
+        """
+        function(activeID, store) {
+            if (!store) {
+                return window.dash_clientside.no_update;
+            }
+
+            // Return full graph
+            if (activeID === 'full') {
+                return store.full;
+            }
+
+            // Search canvas
+            const canvas = (store.canvases || []).find(s => s.id === activeID);
+            if (!canvas) {
+                return window.dash_clientside.no_update;
+            }
+
+            // For Cytoscape: return elements with positions
+            return canvas.elements.map(e => {
+                if (e.data && e.data.id && canvas.positions[e.data.id]) {
+                    return { ...e, position: canvas.positions[e.data.id] };
+                }
+                return e;
+            });
+        }
+        """,
+        Output('network-graph', 'elements', allow_duplicate=True),
+        Input('active-canvas', 'data'),
+        State('canvas-store', 'data'),
+        prevent_initial_call=True
+    )
