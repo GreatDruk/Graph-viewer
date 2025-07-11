@@ -18,6 +18,7 @@ def get_callbacks(app, org_name_map):
     @app.callback(
         Output('network-graph', 'elements'),
         Output('network-graph', 'stylesheet'),
+        Output('network-graph', 'mouseoverNodeData'),
 
         Output('name-organization', 'children'),
 
@@ -56,7 +57,6 @@ def get_callbacks(app, org_name_map):
 
         Output('color-legend', 'style'),
         Output('hover-tooltip', 'style'),
-        Output('hover-tooltip-content', 'children'),
 
         Output('preloader', 'style'),
 
@@ -128,6 +128,7 @@ def get_callbacks(app, org_name_map):
         return (
             elements,  # network-graph elements
             stylesheet,  # network-graph stylesheet
+            None,  # network-graph mouseoverNodeData
 
             org_name,  # name-organization children
 
@@ -166,7 +167,6 @@ def get_callbacks(app, org_name_map):
 
             hidden_style,  # color-legend style
             hidden_style,  # hover-tooltip style
-            '',  # hover-tooltip-content children
 
             hidden_style,  # preloader style
         )
@@ -675,6 +675,22 @@ def get_callbacks(app, org_name_map):
             Output('selected-item', 'data', allow_duplicate=True),
         ],
         Input('network-graph', 'tapEdgeData'),
+        prevent_initial_call=True
+    )
+
+    # Hide tooltip (click on empty space)
+    app.clientside_callback(
+        """
+        function(selNodes, selEdges) {
+            if ((!selNodes || selNodes.length === 0) && (!selEdges || selEdges.length === 0)) {
+                return {'display': 'none'};
+            }
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('hover-tooltip', 'style', allow_duplicate=True),
+        Input('network-graph', 'selectedNodeData'),
+        Input('network-graph', 'selectedEdgeData'),
         prevent_initial_call=True
     )
 
