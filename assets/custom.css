@@ -48,9 +48,6 @@ body {
 	border-top: 3px solid #373539;
 	animation: rotation 1s linear infinite;
 }
-.container__preloader::after {
-	margin-top: -15px;
-}
 @keyframes rotation {
 	from{
 		transform: rotate(0deg);
@@ -372,6 +369,7 @@ input {
     margin-top: -75px;
     border: 1px solid #373539;
     border-radius: 30px;
+	overflow: hidden;
 }
 /* Legend */
 #legend-bar {
