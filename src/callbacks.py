@@ -24,6 +24,11 @@ def get_callbacks(app, org_name_map):
         Output('info-organization-authors', 'children'),
         Output('info-organization-publications', 'children'),
 
+        Output('canvas-store', 'data'),
+        Output('active-canvas', 'data'),
+        Output('canvas-error', 'style'),
+        Output('canvas-error', 'children'),
+
         Output('size-dropdown', 'value'),
 
         Output('edge-threshold', 'min'),
@@ -80,6 +85,10 @@ def get_callbacks(app, org_name_map):
         org_info_authors = f'Авторов: {len(nodes)}'
         org_info_pub = f'Публикаций: {num_publication}'
 
+        # Default canvases
+        empty_store = {'full': elements, 'canvases': []}
+        default_active = 'full'
+
         # Default size option
         default_size = size_options[0]['value']
 
@@ -124,6 +133,11 @@ def get_callbacks(app, org_name_map):
 
             org_info_authors,  # info-organization-authors children
             org_info_pub,  # info-organization-publications children
+
+            empty_store,  # canvas-store data
+            default_active,  # active-canvas data
+            hidden_style,  # canvas-error style
+            '',  # canvas-error children
 
             default_size,  # size-dropdown value
 
@@ -796,17 +810,30 @@ def get_callbacks(app, org_name_map):
 
             // Error: already 30 canvas 
             if (canvases.length >= 30) {
-                return [window.dash_clientside.no_update, {'display': 'flex'}, 'Достигнут лимит - уже создано 30 холстов'];
+                return [
+                    window.dash_clientside.no_update,
+                    {'display': 'flex'},
+                    'Вы достигли максимального количества холстов (30).'
+                ];
             }
 
             // Error: no one selected nodes
             if (!selectedNodes || selectedNodes.length === 0) {
-                return [window.dash_clientside.no_update, {'display': 'flex'}, 'Выберите хотя бы одну вершину'];
+                return [
+                    window.dash_clientside.no_update,
+                    {'display': 'flex'},
+                    'Чтобы создать холст, выберите в графе хотя бы одну вершину.'
+                ];
             }
 
             // Error: >300 nodes
             if (selectedNodes.length > 300) {
-                return [window.dash_clientside.no_update, {'display': 'flex'}, 'Превышен лимит - выбрано более 300 вершин'];
+                return [
+                    window.dash_clientside.no_update,
+                    {'display': 'flex'},
+                    `Вы выбрали ${selectedNodes.length} вершин.\n` +
+                    'Максимально допустимо — 300. Пожалуйста, сократите выбор.'
+                ];
             }
 
             // Get ID selected nodes
@@ -848,9 +875,9 @@ def get_callbacks(app, org_name_map):
         }
         """,
         [
-            Output('canvas-store', 'data'),
-            Output('canvas-error', 'style'),
-            Output('canvas-error', 'children')
+            Output('canvas-store', 'data', allow_duplicate=True),
+            Output('canvas-error', 'style', allow_duplicate=True),
+            Output('canvas-error', 'children', allow_duplicate=True)
         ],
         Input('create-new-canvas', 'n_clicks'),
         [
@@ -891,12 +918,48 @@ def get_callbacks(app, org_name_map):
     # Save selected tab in active-canvas
     app.clientside_callback(
         """
-        function(tabValue) {
-            return tabValue;
+        function(newTab, store, currentElements, prevTab) {
+            if (!store) {
+                return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+            }
+
+            if (prevTab) {
+                if (prevTab === 'full') {
+                    const newFullPos = {};
+                    currentElements.forEach(el => {
+                        if (el.data && el.data.id && el.position) {
+                            newFullPos[el.data.id] = el.position;
+                        }
+                    });
+                    store.fullPositions = newFullPos;
+                } else {
+                    const idx = store.canvases.findIndex(c => c.id === prevTab);
+                    if (idx > -1) {
+                        const pos = store.canvases[idx].positions || {};
+                        currentElements.forEach(el => {
+                            if (el.data && el.data.id && el.position) {
+                                pos[el.data.id] = el.position;
+                            }
+                        });
+                        store.canvases[idx].positions = pos;
+                    }
+                }
+            }
+
+            return [store, newTab];
         }
         """,
-        Output('active-canvas', 'data'),
-        Input('graph-tabs', 'value')
+        [
+            Output('canvas-store', 'data', allow_duplicate=True),
+            Output('active-canvas', 'data', allow_duplicate=True),
+        ],
+        Input('graph-tabs', 'value'),
+        [
+            State('canvas-store', 'data'),
+            State('network-graph', 'elements'),
+            State('active-canvas', 'data'),
+        ],
+        prevent_initial_call=True
     )
 
     # Insert into Cytoscape elements & positions
@@ -909,7 +972,14 @@ def get_callbacks(app, org_name_map):
 
             // Return full graph
             if (activeID === 'full') {
-                return store.full;
+                const fullCanvas = store.full || [];
+                const fullPos = store.fullPositions || {};
+                return fullCanvas.map(e => {
+                    if (e.data && e.data.id && fullPos[e.data.id]) {
+                        return {...e, position: fullPos[e.data.id]};
+                    }
+                    return e;
+                });
             }
 
             // Search canvas
