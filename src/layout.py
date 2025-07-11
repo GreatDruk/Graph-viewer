@@ -52,173 +52,219 @@ def base_layout(org_map, default_org: str) -> html.Div:
                         html.Div('AcademicNet')
                     ], className='content__logo'),
 
-                    # Organization info
-                    html.Div(
-                        ['Университет Иннополис'],
-                        id='name-organization',
-                        className='content__name-org header'
-                    ),
-                    html.Div(
-                        [f'Авторов: {len(nodes)}'],
-                        id='info-organization-authors',
-                        className='content__info-org'
-                    ),
-                    html.Div(
-                        [f'Публикаций: {num_publication}'],
-                        id='info-organization-publications',
-                        className='content__info-org content__info-org_pub'
-                    ),
-                    html.Div(
-                        f'Кластеров: {nodes['cluster'].max()}',
-                        id='info-organization-cluster',
-                        className='content__info-org content__info-org_cluster'
-                    ),
+                    dcc.Tabs(
+                        id='sidebar-tabs',
+                        className='content__tabs',
+                        value='Organization info',
+                        children=[
 
-                    # Select organization
-                    html.Button(
-                        'Сменить организацию',
-                        id='open-overlay-button',
-                        className='content__change-org button',
-                        n_clicks=0
-                    ),
+                        # Organization info
+                        dcc.Tab(
+                            label='',
+                            value='Organization info',
+                            className='content__tab content__tab_1',
+                            children=[
 
-                    # Resize nodes
-                    html.Div([
-                        html.Label('Размер вершин:'),
-                        dcc.Dropdown(
-                            id='size-dropdown',
-                            options=size_options,
-                            value=size_options[0]['value']
-                        )
-                    ], className='content__size dropdown'),
+                                html.Div(
+                                    ['Университет Иннополис'],
+                                    id='name-organization',
+                                    className='content__name-org header'
+                                ),
+                                html.Div(
+                                    [f'Авторов: {len(nodes)}'],
+                                    id='info-organization-authors',
+                                    className='content__info-org'
+                                ),
+                                html.Div(
+                                    [f'Публикаций: {num_publication}'],
+                                    id='info-organization-publications',
+                                    className='content__info-org content__info-org_pub'
+                                ),
+                                html.Div(
+                                    f'Кластеров: {nodes['cluster'].max()}',
+                                    id='info-organization-cluster',
+                                    className='content__info-org content__info-org_cluster'
+                                ),
 
-                    # Weight threshold
-                    html.Div([
-                        html.Label('Минимальный вес ребра:'),
-                        dcc.Input(
-                            id='edge-threshold',
-                            type='number',
-                            min=int(edges['weight'].min()),
-                            max=int(edges['weight'].max()),
-                            step=1,
-                            value=int(edges['weight'].min()),
-                        )
-                    ], className='content__edge-threshold dropdown'),
+                                # Select organization
+                                html.Button(
+                                    'Сменить организацию',
+                                    id='open-overlay-button',
+                                    className='content__change-org button',
+                                    n_clicks=0
+                                ),
 
-                    # Cluster search
-                    html.Div([
-                        html.Label('Поиск кластера:'),
-                        html.Div([
-                            dcc.Input(
-                                id='cluster-filter',
-                                type='number',
-                                min=int(nodes['cluster'].min()),
-                                max=int(nodes['cluster'].max()),
-                                placeholder='Введите номер',
-                                debounce=True
-                            )
-                        ], className='search__input'),
-
-                        html.Div([
-                            html.Button(
-                                '',
-                                id='cluster-button',
-                                n_clicks=0
-                            )
-                        ], className='search__button')
-                    ], className='content__cluster search'),
-
-                    # Author search
-                    html.Div([
-                        html.Label('Поиск автора:'),
-                        html.Div([
-                            dcc.Input(
-                                id='person-search',
-                                type='text',
-                                placeholder='Иванов И.И.',
-                                debounce=True
-                            )
-                        ], className='search__input'),
-
-                        html.Div([
-                            html.Button(
-                                '',
-                                id='search-button',
-                                n_clicks=0
-                            )
-                        ], className='search__button')
-                    ], className='search'),
-
-                    # Reset search
-                    html.Div([
-                        html.Button(
-                            'Сбросить поиск',
-                            id='reset-button',
-                            className='button',
-                            n_clicks=0
-                        )
-                    ], className='content__reset'),
-
-                    # Show weights
-                    html.Div([
-                        dcc.Checklist(
-                            id='show-weights',
-                            options=[{
-                                'label': 'Показывать веса рёбер',
-                                'value': 'show'
-                            }],
-                            value=['show'],
-                            labelStyle={'display': 'flex'}
+                            ],
                         ),
-                        dcc.Checklist(
-                            id='show-isolates',
-                            options=[{
-                                'label': 'Показывать вершины без рёбер', 
-                                'value': 'show'
-                            }],
-                            value=['show'],
-                            labelStyle={'display': 'flex'}
-                        ),
-                    ], className='content__checkbox'),
 
-                    # Metrics
-                    html.Div([
-                        html.Button(
-                            'Анализ по метрике',
-                            id='color-button',
-                            className='button',
-                            n_clicks=0
-                        ),
-                        html.Div([
-                            dcc.Dropdown(
-                                id='color-by-dropdown',
-                                options=color_options,
-                                placeholder='Выберите показатель',
-                            ),
-                        ], id='color-by-container', className='dropdown', style={'display': 'none'}),
+                        # Filters and search
+                        dcc.Tab(
+                            label='',
+                            value='Filters and search',
+                            className='content__tab content__tab_2',
+                            children=[
 
-                        html.Div([
-                            dcc.Store(
-                                id='node-color-limits',
-                                data={'vmin': None, 'vmax': None}
-                            ),
-                            html.Label('Порог минимума:'),
-                            dcc.Input(id='node-color-min', type='number'),
-                            html.Label('Порог максимума:'),
-                            dcc.Input(id='node-color-max', type='number'),
-                        ], id='color-thresholds-container', style={'display': 'none'}),
-                    ], className='content__metric'),
+                                # Weight threshold
+                                html.Div([
+                                    html.Label('Минимальный вес ребра:'),
+                                    dcc.Input(
+                                        id='edge-threshold',
+                                        type='number',
+                                        min=int(edges['weight'].min()),
+                                        max=int(edges['weight'].max()),
+                                        step=1,
+                                        value=int(edges['weight'].min()),
+                                    )
+                                ], className='content__edge-threshold dropdown'),
 
-                    # Add new canvas
-                    html.Div([
-                        html.Button(
-                            'Новый холст',
-                            id='create-new-canvas',
-                            className='button',
-                            n_clicks=0
+                                # Show/hide checkboxes
+                                html.Div([
+                                    dcc.Checklist(
+                                        id='show-weights',
+                                        options=[{
+                                            'label': 'Показывать веса рёбер',
+                                            'value': 'show'
+                                        }],
+                                        value=['show'],
+                                        labelStyle={'display': 'flex'}
+                                    ),
+                                    dcc.Checklist(
+                                        id='show-isolates',
+                                        options=[{
+                                            'label': 'Показывать вершины без рёбер', 
+                                            'value': 'show'
+                                        }],
+                                        value=['show'],
+                                        labelStyle={'display': 'flex'}
+                                    ),
+                                ], className='content__checkbox'),
+
+                                # Cluster search
+                                html.Div([
+                                    html.Label('Поиск кластера:'),
+                                    html.Div([
+                                        dcc.Input(
+                                            id='cluster-filter',
+                                            type='number',
+                                            min=int(nodes['cluster'].min()),
+                                            max=int(nodes['cluster'].max()),
+                                            placeholder='Введите номер',
+                                            debounce=True
+                                        )
+                                    ], className='search__input'),
+
+                                    html.Div([
+                                        html.Button(
+                                            '',
+                                            id='cluster-button',
+                                            n_clicks=0
+                                        )
+                                    ], className='search__button')
+                                ], className='content__cluster search'),
+
+                                # Author search
+                                html.Div([
+                                    html.Label('Поиск автора:'),
+                                    html.Div([
+                                        dcc.Input(
+                                            id='person-search',
+                                            type='text',
+                                            placeholder='Иванов И.И.',
+                                            debounce=True
+                                        )
+                                    ], className='search__input'),
+
+                                    html.Div([
+                                        html.Button(
+                                            '',
+                                            id='search-button',
+                                            n_clicks=0
+                                        )
+                                    ], className='search__button')
+                                ], className='search'),
+
+                                # Reset search
+                                html.Div([
+                                    html.Button(
+                                        'Сбросить поиск',
+                                        id='reset-button',
+                                        className='button',
+                                        n_clicks=0
+                                    )
+                                ], className='content__reset'),
+
+                            ],
                         ),
-                        html.Div(id='canvas-error', className='error__mini')
-                    ], className='content__new_canvas'),
+
+                        # Visualization
+                        dcc.Tab(
+                            label='',
+                            value='Visualization',
+                            className='content__tab content__tab_3',
+                            children=[
+
+                                # Resize nodes
+                                html.Div([
+                                    html.Label('Размер вершин:'),
+                                    dcc.Dropdown(
+                                        id='size-dropdown',
+                                        options=size_options,
+                                        value=size_options[0]['value']
+                                    )
+                                ], className='content__size dropdown'),
+
+                                # Metrics
+                                html.Div([
+                                    html.Button(
+                                        'Анализ по метрике',
+                                        id='color-button',
+                                        className='button',
+                                        n_clicks=0
+                                    ),
+                                    html.Div([
+                                        dcc.Dropdown(
+                                            id='color-by-dropdown',
+                                            options=color_options,
+                                            placeholder='Выберите показатель',
+                                        ),
+                                    ], id='color-by-container', className='dropdown', style={'display': 'none'}),
+
+                                    html.Div([
+                                        dcc.Store(
+                                            id='node-color-limits',
+                                            data={'vmin': None, 'vmax': None}
+                                        ),
+                                        html.Label('Порог минимума:'),
+                                        dcc.Input(id='node-color-min', type='number'),
+                                        html.Label('Порог максимума:'),
+                                        dcc.Input(id='node-color-max', type='number'),
+                                    ], id='color-thresholds-container', style={'display': 'none'}),
+                                ], className='content__metric'),
+
+                            ],
+                        ),
+
+                        # Canvas management
+                        dcc.Tab(
+                            label='',
+                            value='Canvas management',
+                            className='content__tab content__tab_4',
+                            children=[
+
+                                # Add new canvas
+                                html.Div([
+                                    html.Button(
+                                        'Новый холст',
+                                        id='create-new-canvas',
+                                        className='button',
+                                        n_clicks=0
+                                    ),
+                                    html.Div(id='canvas-error', className='error__mini')
+                                ], className='content__new_canvas'),
+
+                            ],
+                        ),
+                    ]),
                 ], className='content__sidebar'),
 
                 # Graph
