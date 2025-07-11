@@ -33,7 +33,7 @@ body {
 	width: 110px;
 	margin-left: -3px;
 	margin-bottom: -6px;
-	background: url('/assets/preload-logo.svg') no-repeat center;
+	background: url('icons/preload-logo.svg') no-repeat center;
 	background-size: contain;
 }
 ._dash-loading::after, .container__preloader::after {
@@ -152,6 +152,69 @@ input {
 	margin-top: -14px;
 	margin-bottom: 20px;
 }
+/* Tabs */
+.content__sidebar .tab-parent {
+    width: 100%;
+}
+.content__sidebar .content__tabs {
+	height: 33px;
+	width: 184px;
+	margin: 10px auto 30px;
+	display: flex;
+	justify-content: space-between;
+}
+.content__sidebar .content__tabs .content__tab {
+	width: max-content;
+    border: none !important;
+    padding: 0;
+	cursor: default !important;
+	background-color: #373539;
+}
+.content__sidebar .content__tabs .content__tab:hover {
+	background-color: #373539;
+}
+.content__sidebar .content__tabs .content__tab span {
+	display: block;
+    height: 100%;
+	width: 33px;
+	background-color: #373539;
+    border: 1px solid #EEECE3 !important;
+    border-radius: 10px;
+    text-align: center;
+	cursor: pointer !important;
+	transition: background-color 0.2s linear;
+}
+.content__sidebar .content__tabs .content__tab span:hover {
+	background-color: rgba(238, 236, 227, 0.1);
+}
+.content__sidebar .content__tabs .tab--selected span {
+	background-color: rgba(238, 236, 227, 0.15);
+	color: #EEECE3;
+}
+.content__sidebar .content__tabs .content__tab span::after {
+	position: absolute;
+	content: '';
+  	display: block;
+	margin: 5px;
+	width: 23px;
+	height: 23px;
+}
+.content__sidebar .content__tabs .content__tab_1 span::after {
+	background: url('icons/org-info.svg') no-repeat center;
+	background-size: contain;
+}
+.content__sidebar .content__tabs .content__tab_2 span::after {
+	background: url('icons/search.svg') no-repeat center;
+	background-size: contain;
+}
+.content__sidebar .content__tabs .content__tab_3 span::after {
+	background: url('icons/tuning.svg') no-repeat center;
+	background-size: contain;
+}
+.content__sidebar .content__tabs .content__tab_4 span::after {
+	background: url('icons/canvas.svg') no-repeat center;
+	background-size: contain;
+}
 /* Default */
 .header {
 	font-size: 17px;
@@ -258,11 +321,6 @@ input {
 .search__button button {
 	width: 100%;
 	height: 100%;
-	background-image: url("search.png");
-	background-repeat: no-repeat;
-	background-position: center;
-	background-size: 20px 20px;
-	padding: 8px 16px;
 	border: 1px solid #EEECE3;
 	border-left: none;
 	border-radius: 0 7px 7px 0;
@@ -270,6 +328,16 @@ input {
 	background-color: #EEECE3;
 	font-size: 16px;
 	transition: background-color 0.3s linear;
+}
+.search__button button::after {
+	position: absolute;
+	content: '';
+  	display: block;
+	margin: -9px 0 0 10px;
+	width: 18px;
+	height: 18px;
+	background: url('icons/search-button.svg') no-repeat center;
+	background-size: contain;
 }
 .search__button button:hover {
 	background-color: rgba(238, 236, 227, 0.7);
