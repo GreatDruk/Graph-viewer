@@ -321,6 +321,9 @@ def base_layout(org_map, default_org: str) -> html.Div:
 
             # Preloader
             html.Div(
+                [
+                    'Loading...',
+                ],
                 id='preloader',
                 className='container__preloader',
             ),
