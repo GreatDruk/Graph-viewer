@@ -10,6 +10,7 @@ Defines all Dash callbacks for:
 
 from dash import html, Input, Output, State, exceptions
 import pandas as pd
+import plotly.express as px
 
 from src.data_prepare import prepare_network_elements, load_cache_authors, load_cache_coauthors
 
@@ -24,6 +25,10 @@ def get_callbacks(app, org_name_map):
 
         Output('info-organization-authors', 'children'),
         Output('info-organization-publications', 'children'),
+        Output('info-organization-cites', 'children'),
+        Output('info-organization-hindex', 'children'),
+
+        Output('info-organization-graph', 'figure'),
 
         Output('canvas-store', 'data'),
         Output('active-canvas', 'data'),
@@ -77,6 +82,10 @@ def get_callbacks(app, org_name_map):
         nodes = data['nodes']
         edges = data['edges']
         num_publication = data['num_publication']
+        total_cites = data['num_cites']
+        h_index = data['h_index']
+        years = data['years']
+        counts_publication_by_year = data['counts_publication_by_year']
 
         # Name organization
         org_name = org_name_map.get(org_id, org_id)
@@ -84,6 +93,64 @@ def get_callbacks(app, org_name_map):
         # Info organization
         org_info_authors = f'Авторов: {len(nodes)}'
         org_info_pub = f'Публикаций: {num_publication}'
+        org_info_cites = f'Цитирований: {total_cites}'
+        org_info_hindex = f'Индекс Хирша: {h_index}'
+
+        # Graph publications over time
+        fig = (
+            px.line(
+                x=years,
+                y=counts_publication_by_year,
+            )
+            .update_traces(line=dict(color='#EEECE3'))
+            .update_layout(
+                height=200,
+                title=None,
+                font_family='Arial',
+                paper_bgcolor='#373539',
+                plot_bgcolor='#373539',
+                margin=dict(l=0, r=13, t=0, b=0),
+                xaxis=dict(
+                    showgrid=False,
+                    zeroline=False,
+                    showticklabels=True,
+                    title=None,
+                    showline=True,
+                    linecolor='#EEECE3',
+                    linewidth=1,
+                    ticks='outside',
+                    ticklen=3,
+                    tickcolor='#EEECE3',
+                    tickfont=dict(
+                        color='#EEECE3',
+                        family='Arial',
+                        size=10,
+                    ),
+                    tickson='labels',
+                    ticklabelposition='outside'
+                ),
+                yaxis=dict(
+                    showgrid=False,
+                    zeroline=False,
+                    showticklabels=True,
+                    title=None,
+                    showline=True,
+                    linecolor='#EEECE3',
+                    linewidth=1,
+                    ticklen=3,
+                    tickcolor='#EEECE3',
+                    ticks='outside',
+                    tickfont=dict(
+                        color='#EEECE3',
+                        family='Arial',
+                        size=10,
+                    ),
+                    tickson='labels',
+                    ticklabelposition='outside'
+                ),
+                dragmode=False,
+            )
+        )
 
         # Default canvases
         empty_store = {'full': elements, 'canvases': []}
@@ -134,6 +201,10 @@ def get_callbacks(app, org_name_map):
 
             org_info_authors,  # info-organization-authors children
             org_info_pub,  # info-organization-publications children
+            org_info_cites,  # info-organization-cites children
+            org_info_hindex,  # info-organization-hindex children
+
+            fig,  # info-organization-graph figure
 
             empty_store,  # canvas-store data
             default_active,  # active-canvas data
