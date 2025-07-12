@@ -220,6 +220,21 @@ def scale_coordinates(series: pd.Series, new_min: int = 0, new_max: int = 2000) 
     return new_min + (series - old_min) * (new_max - new_min) / (old_max - old_min)
 
 
+def compute_h_index(citation_counts):
+    """
+    Compute the h-index.
+    """
+    counts = list(citation_counts)
+    counts.sort(reverse=True)
+    h = 0
+
+    for i, c in enumerate(counts, start=1):
+        if c < i:
+            break
+        h = i
+    return h
+
+
 def prepare_network_elements(org_id: str):
     """
     Main function: returns a dict with keys:
@@ -306,6 +321,19 @@ def prepare_network_elements(org_id: str):
     # Append first and last pub years
     nodes['First_pub_year'] = nodes['label'].map(lambda lbl: years_map.get(lbl, {}).get('First_pub_year'))
     nodes['Last_pub_year']  = nodes['label'].map(lambda lbl: years_map.get(lbl, {}).get('Last_pub_year'))
+
+    # Range years
+    min_year = publication['Year'].min()
+    max_year = publication['Year'].max()
+    years = list(range(min_year, max_year + 1))
+
+    # Count num of publications in each year
+    counts_by_year = (
+        publication.groupby('Year')
+            .size()
+            .reindex(years, fill_value=0)
+            .tolist()
+    )
 
     # Build elements
     nodes_records = nodes.to_dict('records')
@@ -423,6 +451,10 @@ def prepare_network_elements(org_id: str):
             'min': nodes[col].min(),
             'max': nodes[col].max()
         }
+
+    # Counting citations for publications
+    total_citations = publication['Cited by'].sum()
+    h_index = compute_h_index(publication['Cited by'])
     
     result = {
         'elements': elements,
@@ -432,7 +464,11 @@ def prepare_network_elements(org_id: str):
         'color_options': color_options,
         'nodes': nodes,
         'edges': edges,
-        'num_publication': len(publication)
+        'num_publication': len(publication),
+        'num_cites': total_citations,
+        'h_index': h_index,
+        'years': years,
+        'counts_publication_by_year': counts_by_year,
     }
     
     try:
