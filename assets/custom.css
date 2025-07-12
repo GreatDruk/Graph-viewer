@@ -159,7 +159,7 @@ input {
 .content__sidebar .content__tabs {
 	height: 33px;
 	width: 184px;
-	margin: 10px auto 30px;
+	margin: 10px auto 25px;
 	display: flex;
 	justify-content: space-between;
 }
@@ -175,6 +175,7 @@ input {
 }
 .content__sidebar .content__tabs .content__tab span {
 	display: block;
+	position: relative;
     height: 100%;
 	width: 33px;
 	background-color: #373539;
@@ -219,7 +220,7 @@ input {
 .header {
 	font-size: 17px;
 	font-weight: 600;
-	margin-bottom: 10px;
+	margin-bottom: 12px;
 }
 .button {
 	margin-bottom: 10px;
@@ -244,11 +245,20 @@ input {
 	margin-bottom: 25px;
 }
 .content__info-org {
-	margin-bottom: 5px;
+	margin-bottom: 7px;
 	font-size: 15px;
 }
-.content__info-org_cluster {
-	margin-bottom: 15px;
+.content__info-hindex {
+	margin-bottom: 20px;
+}
+.content__info-org-graph_header {
+	margin-bottom: 8px;
+}
+.content__graph-org {
+	margin-bottom: 25px;
+}
+.content__graph-org .js-plotly-plot .plotly div {
+	height: 200px !important;
 }
 .dropdown {
 	width: 100%;
