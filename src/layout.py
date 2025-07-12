@@ -5,6 +5,7 @@ Defines the Dash app layout for graph viewer.
 
 from dash import dcc, html
 import dash_cytoscape as cyto
+import plotly.express as px
 
 from src.data_prepare import prepare_network_elements
 
@@ -30,12 +31,16 @@ def base_layout(org_map, default_org: str) -> html.Div:
     nodes = data['nodes']
     edges = data['edges']
     num_publication = data['num_publication']
+    total_cites = data['num_cites']
+    h_index = data['h_index']
+    years = data['years']
+    counts_publication_by_year = data['counts_publication_by_year']
 
     return html.Div([
         # Hidden stores for state management
         dcc.Store(id='current-org', data=default_org),
         dcc.Store(id='canvas-store', data={
-            'full': data['elements'],
+            'full': elements,
             'canvases': []
         }),
         dcc.Store(id='active-canvas', data='full'), 
@@ -84,6 +89,31 @@ def base_layout(org_map, default_org: str) -> html.Div:
                                     f'Кластеров: {nodes['cluster'].max()}',
                                     id='info-organization-cluster',
                                     className='content__info-org content__info-org_cluster'
+                                ),
+                                html.Div(
+                                    [f'Цитирований: {total_cites}'],
+                                    id='info-organization-cites',
+                                    className='content__info-org content__info-org_cites'
+                                ),
+                                html.Div(
+                                    [f'Индекс Хирша: {h_index}'],
+                                    id='info-organization-hindex',
+                                    className='content__info-org content__info-hindex'
+                                ),
+
+                                # Graph publications over time
+                                html.Div(
+                                    [f'Публикационная активность:'],
+                                    className='content__info-org-graph_header'
+                                ),
+                                dcc.Graph(
+                                    id='info-organization-graph',
+                                    figure={},
+                                    config={
+                                        'displayModeBar': False,
+                                        'staticPlot': True
+                                    },
+                                    className='content__graph-org'
                                 ),
 
                                 # Select organization
