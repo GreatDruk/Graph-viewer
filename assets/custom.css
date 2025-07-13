@@ -256,6 +256,8 @@ input {
 }
 .content__graph-org {
 	margin-bottom: 25px;
+	height: 200px;
+	overflow: hidden;
 }
 .content__graph-org .js-plotly-plot .plotly div {
 	height: 200px !important;
