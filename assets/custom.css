@@ -208,11 +208,11 @@ input {
 	background-size: contain;
 }
 .content__sidebar .content__tabs .content__tab_2 span::after {
-	background: url('icons/search.svg') no-repeat center;
+	background: url('icons/tuning.svg') no-repeat center;
 	background-size: contain;
 }
 .content__sidebar .content__tabs .content__tab_3 span::after {
-	background: url('icons/tuning.svg') no-repeat center;
+	background: url('icons/search.svg') no-repeat center;
 	background-size: contain;
 }
 .content__sidebar .content__tabs .content__tab_4 span::after {
@@ -359,6 +359,9 @@ input {
 .search__button button:hover {
 	background-color: rgba(238, 236, 227, 0.7);
 }
+.content__edge-threshold {
+	margin-bottom: 7px;
+}
 
 /* Checkbox */
 .content__checkbox {
@@ -370,6 +373,8 @@ input {
 .content__checkbox label {
 	display: flex;
 	align-items: center;
+	user-select: none;
+	cursor: pointer;
 }
 .content__checkbox input {
 	margin-right: 7px;
