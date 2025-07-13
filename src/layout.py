@@ -180,12 +180,22 @@ def base_layout(org_map, default_org: str) -> html.Div:
                             ],
                         ),
 
-                        # Filters and search
+                        # Visualization
                         dcc.Tab(
                             label='',
-                            value='Filters and search',
+                            value='Visualization',
                             className='content__tab content__tab_2',
                             children=[
+
+                                # Resize nodes
+                                html.Div([
+                                    html.Label('Размер вершин:'),
+                                    dcc.Dropdown(
+                                        id='size-dropdown',
+                                        options=size_options,
+                                        value=size_options[0]['value']
+                                    )
+                                ], className='content__size dropdown'),
 
                                 # Weight threshold
                                 html.Div([
@@ -221,6 +231,44 @@ def base_layout(org_map, default_org: str) -> html.Div:
                                         labelStyle={'display': 'flex'}
                                     ),
                                 ], className='content__checkbox'),
+
+                                # Metrics
+                                html.Div([
+                                    html.Button(
+                                        'Анализ по метрике',
+                                        id='color-button',
+                                        className='button',
+                                        n_clicks=0
+                                    ),
+                                    html.Div([
+                                        dcc.Dropdown(
+                                            id='color-by-dropdown',
+                                            options=color_options,
+                                            placeholder='Выберите показатель',
+                                        ),
+                                    ], id='color-by-container', className='dropdown', style={'display': 'none'}),
+
+                                    html.Div([
+                                        dcc.Store(
+                                            id='node-color-limits',
+                                            data={'vmin': None, 'vmax': None}
+                                        ),
+                                        html.Label('Порог минимума:'),
+                                        dcc.Input(id='node-color-min', type='number'),
+                                        html.Label('Порог максимума:'),
+                                        dcc.Input(id='node-color-max', type='number'),
+                                    ], id='color-thresholds-container', style={'display': 'none'}),
+                                ], className='content__metric'),
+
+                            ],
+                        ),
+
+                        # Search
+                        dcc.Tab(
+                            label='',
+                            value='Search',
+                            className='content__tab content__tab_3',
+                            children=[
 
                                 # Cluster search
                                 html.Div([
@@ -279,54 +327,6 @@ def base_layout(org_map, default_org: str) -> html.Div:
                             ],
                         ),
 
-                        # Visualization
-                        dcc.Tab(
-                            label='',
-                            value='Visualization',
-                            className='content__tab content__tab_3',
-                            children=[
-
-                                # Resize nodes
-                                html.Div([
-                                    html.Label('Размер вершин:'),
-                                    dcc.Dropdown(
-                                        id='size-dropdown',
-                                        options=size_options,
-                                        value=size_options[0]['value']
-                                    )
-                                ], className='content__size dropdown'),
-
-                                # Metrics
-                                html.Div([
-                                    html.Button(
-                                        'Анализ по метрике',
-                                        id='color-button',
-                                        className='button',
-                                        n_clicks=0
-                                    ),
-                                    html.Div([
-                                        dcc.Dropdown(
-                                            id='color-by-dropdown',
-                                            options=color_options,
-                                            placeholder='Выберите показатель',
-                                        ),
-                                    ], id='color-by-container', className='dropdown', style={'display': 'none'}),
-
-                                    html.Div([
-                                        dcc.Store(
-                                            id='node-color-limits',
-                                            data={'vmin': None, 'vmax': None}
-                                        ),
-                                        html.Label('Порог минимума:'),
-                                        dcc.Input(id='node-color-min', type='number'),
-                                        html.Label('Порог максимума:'),
-                                        dcc.Input(id='node-color-max', type='number'),
-                                    ], id='color-thresholds-container', style={'display': 'none'}),
-                                ], className='content__metric'),
-
-                            ],
-                        ),
-
                         # Canvas management
                         dcc.Tab(
                             label='',
@@ -361,7 +361,7 @@ def base_layout(org_map, default_org: str) -> html.Div:
 
                     cyto.Cytoscape(
                         id='network-graph',
-                        elements=[],
+                        elements=elements,
                         layout={'name': 'preset'},
                         stylesheet=basic_stylesheet,
                         userPanningEnabled=True,
