@@ -108,7 +108,60 @@ def base_layout(org_map, default_org: str) -> html.Div:
                                 ),
                                 dcc.Graph(
                                     id='info-organization-graph',
-                                    figure={},
+                                    figure=(
+                                        px.line(
+                                            x=years,
+                                            y=counts_publication_by_year,
+                                        )
+                                        .update_traces(line=dict(color='#EEECE3'))
+                                        .update_layout(
+                                            height=200,
+                                            title=None,
+                                            font_family='Arial',
+                                            paper_bgcolor='#373539',
+                                            plot_bgcolor='#373539',
+                                            margin=dict(l=0, r=13, t=0, b=0),
+                                            xaxis=dict(
+                                                showgrid=False,
+                                                zeroline=False,
+                                                showticklabels=True,
+                                                title=None,
+                                                showline=True,
+                                                linecolor='#EEECE3',
+                                                linewidth=1,
+                                                ticks='outside',
+                                                ticklen=3,
+                                                tickcolor='#EEECE3',
+                                                tickfont=dict(
+                                                    color='#EEECE3',
+                                                    family='Arial',
+                                                    size=10,
+                                                ),
+                                                tickson='labels',
+                                                ticklabelposition='outside'
+                                            ),
+                                            yaxis=dict(
+                                                showgrid=False,
+                                                zeroline=False,
+                                                showticklabels=True,
+                                                title=None,
+                                                showline=True,
+                                                linecolor='#EEECE3',
+                                                linewidth=1,
+                                                ticklen=3,
+                                                tickcolor='#EEECE3',
+                                                ticks='outside',
+                                                tickfont=dict(
+                                                    color='#EEECE3',
+                                                    family='Arial',
+                                                    size=10,
+                                                ),
+                                                tickson='labels',
+                                                ticklabelposition='outside'
+                                            ),
+                                            dragmode=False,
+                                        )
+                                    ),
                                     config={
                                         'displayModeBar': False,
                                         'staticPlot': True
