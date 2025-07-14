@@ -178,6 +178,15 @@ def get_callbacks(app, org_name_map):
         else:
             init_w = 1
         init_w = max(min_w, min(init_w, max_w))
+
+        stylesheet.append({
+            'selector': f'edge[weight < {init_w}]',
+            'style': {'display': 'none'}
+        })
+        stylesheet.append({
+            'selector': f'edge[weight >= {init_w}]',
+            'style': {'display': 'element'}
+        })
         
         # Cluster
         min_cluster = int(nodes['cluster'].min())
@@ -246,17 +255,18 @@ def get_callbacks(app, org_name_map):
     app.clientside_callback(
         """
         function(n, sel) {
-            // On "Select" button click, update current-org and hide overlay
+            // On "Select" button click, update current-org, hide overlay and clear graph
             if (n > 0) {
-                return [sel, {'display': 'none'}, {'display': 'flex'}];
+                return [sel, {'display': 'none'}, {'display': 'flex'}, []];
             }
-            return [window.dash_clientside.no_update, window.dash_clientside.no_update, window.dash_clientside.no_update];
+            return [window.dash_clientside.no_update, window.dash_clientside.no_update, window.dash_clientside.no_update, window.dash_clientside.no_update];
         }
         """,
         [
             Output('current-org', 'data'),
             Output('overlay', 'style'),
             Output('preloader', 'style', allow_duplicate=True),
+            Output('network-graph', 'elements', allow_duplicate=True),
         ],
         Input('overlay-button', 'n_clicks'),
         State('overlay-dropdown', 'value'),
