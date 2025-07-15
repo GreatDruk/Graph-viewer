@@ -211,10 +211,25 @@ def build_coauthors_map(publication: pd.DataFrame, replace_dict: dict, edges_rec
     return co_map
 
 
-def scale_coordinates(series: pd.Series, new_min: int = 0, new_max: int = 2000) -> pd.Series:
+def scale_coordinates(series: pd.Series, new_min: int = 0, new_max: int = None) -> pd.Series:
     """
     Linearly scale 'series' values into [new_min, new_max].
     """
+    count = len(series)
+    if new_max is None:
+        if count < 100:
+            new_max = 1000
+        elif count < 500:
+            new_max = 2000
+        elif count < 1000:
+            new_max = 3000
+        elif count < 3000:
+            new_max = 4000
+        elif count < 4000:
+            new_max = 5000
+        else:
+            new_max = 6000
+    
     old_min = series.min()
     old_max = series.max()
     return new_min + (series - old_min) * (new_max - new_min) / (old_max - old_min)
