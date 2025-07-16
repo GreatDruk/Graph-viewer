@@ -241,23 +241,30 @@ def base_layout(org_map, default_org: str) -> html.Div:
                                         n_clicks=0
                                     ),
                                     html.Div([
-                                        dcc.Dropdown(
-                                            id='color-by-dropdown',
-                                            options=color_options,
-                                            placeholder='Выберите показатель',
-                                        ),
-                                    ], id='color-by-container', className='dropdown', style={'display': 'none'}),
+                                            dcc.Dropdown(
+                                                id='color-by-dropdown',
+                                                options=color_options,
+                                                placeholder='Выберите показатель',
+                                            ),
+                                        ],
+                                        id='color-by-container',
+                                        className='dropdown',
+                                        style={'display': 'none'}
+                                    ),
 
                                     html.Div([
-                                        dcc.Store(
-                                            id='node-color-limits',
-                                            data={'vmin': None, 'vmax': None}
-                                        ),
-                                        html.Label('Порог минимума:'),
-                                        dcc.Input(id='node-color-min', type='number'),
-                                        html.Label('Порог максимума:'),
-                                        dcc.Input(id='node-color-max', type='number'),
-                                    ], id='color-thresholds-container', style={'display': 'none'}),
+                                            dcc.Store(
+                                                id='node-color-limits',
+                                                data={'vmin': None, 'vmax': None}
+                                            ),
+                                            html.Label('Порог минимума:'),
+                                            dcc.Input(id='node-color-min', type='number'),
+                                            html.Label('Порог максимума:'),
+                                            dcc.Input(id='node-color-max', type='number'),
+                                        ],
+                                        id='color-thresholds-container',
+                                        style={'display': 'none'}
+                                    ),
                                 ], className='content__metric'),
 
                             ],
@@ -342,8 +349,26 @@ def base_layout(org_map, default_org: str) -> html.Div:
                                         className='button',
                                         n_clicks=0
                                     ),
-                                    html.Div(id='canvas-error', className='error__mini')
-                                ], className='content__new_canvas'),
+                                    html.Div(
+                                        id='canvas-error',
+                                        className='error__mini'
+                                    )
+                                ], className='content__new-canvas'),
+
+                                html.Ul(id='canvas-list', className='content__canvas-list canvas-list'),
+
+                                html.Button(
+                                    'Удалить все холсты',
+                                    id='delete-all-canvases',
+                                    className='button',
+                                    n_clicks=0
+                                ),
+                                html.Button(
+                                    'Разбить по кластерам',
+                                    id='split-by-clusters',
+                                    className='button',
+                                    n_clicks=0
+                                ),
 
                             ],
                         ),
