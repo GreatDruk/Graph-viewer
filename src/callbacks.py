@@ -1000,15 +1000,79 @@ def get_callbacks(app, org_name_map):
             const slides = (store && store.canvases) || [];
 
             const tabs = [ makeTab('Полный граф', 'full') ];
-
-            for (let c of slides) {
+            slides.forEach(c => {
                 tabs.push(makeTab(c.name, c.id));
-            }
+            });
 
-            return tabs;
+            items = [];
+            const allCanvases = [{ id: 'full', name: 'Полный граф' }].concat(slides);
+            allCanvases.forEach(c => {
+                const renameBtn = window.React.createElement(
+                    'button',
+                    { key: c.id + '-rename', className: 'canvas-list__icon', 'id': c.id + '-rename' },
+                    window.React.createElement(
+                        'img',
+                        {
+                            src: '/assets/icons/rename.svg',
+                            alt: 'rename',
+                            style: { width: '18px', height: '18px' }
+                        }
+                    )
+                );
+                const deleteBtn = window.React.createElement(
+                    'button',
+                    { key: c.id + '-delete', className: 'canvas-list__icon', 'id': c.id + '-delete' },
+                    window.React.createElement(
+                        'img',
+                        {
+                            src: '/assets/icons/delete.svg',
+                            alt: 'delete',
+                            style: { width: '18px', height: '18px' }
+                        }
+                    )
+                );
+                const dupBtn = window.React.createElement(
+                    'button',
+                    { key: c.id + '-dup', className: 'canvas-list__icon', 'id': c.id + '-dup' },
+                    window.React.createElement(
+                        'img',
+                        {
+                            src: '/assets/icons/duplicate.svg',
+                            alt: 'duplicate',
+                            style: { width: '18px', height: '18px' }
+                        }
+                    )
+                );
+
+                const label = window.React.createElement(
+                    'span',
+                    { key: c.id + '-label', className: 'canvas-list__label', 'id': c.id + '-label' },
+                    c.name
+                );
+
+                const actions = window.React.createElement(
+                    'div',
+                    { key: c.id + '-actions', className: 'canvas-list__actions' },
+                    renameBtn, deleteBtn, dupBtn
+                );
+
+                const li = window.React.createElement(
+                    'li',
+                    { key: c.id, className: 'canvas-list__item', 'id': c.id },
+                    label,
+                    actions
+                );
+
+                items.push(li);
+            });
+
+            return [tabs, items];
         }
         """,
-        Output('graph-tabs', 'children'),
+        [
+            Output('graph-tabs', 'children'),
+            Output('canvas-list', 'children'),
+        ],
         Input('canvas-store', 'data')
     )
 
