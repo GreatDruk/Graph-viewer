@@ -359,9 +359,18 @@ def base_layout(org_map, default_org: str) -> html.Div:
                                     dcc.RadioItems(
                                         id='canvas-list',
                                         options=[],
-                                        value='full',
+                                        value='full-label',
                                         className='canvas-list__select',
-                                        inputStyle={'display': 'none'}
+                                        inputStyle={
+                                            'position': 'absolute',
+                                            'opacity': 0,
+                                            'width': '100%',
+                                            'height': '36px',
+                                            'top': 0,
+                                            'left': 0,
+                                            'margin': 0,
+                                            'cursor': 'pointer'
+                                        },
                                     ),
                                     dcc.RadioItems(
                                         id='canvas-list-action',
