@@ -441,6 +441,9 @@ input {
 .canvas-list__select label:hover .canvas-list__label {
     padding-right: 90px;
 }
+.canvas-list__select label input:checked + .canvas-list__label {
+	background-color: rgba(238, 236, 227, 0.15);
+}
 .canvas-list__label {
     display: block;
     height: 100%;
