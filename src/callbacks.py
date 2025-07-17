@@ -951,10 +951,10 @@ def get_callbacks(app, org_name_map):
             });
 
             // Create new object canvas
-            const idx = canvases.length + 1;
+            const indx = canvases.length + 1;
             const newCanvas = {
-                id: `canvas-${idx}`,
-                name: `${idx}`,
+                id: `canvas-${indx}`,
+                name: `${indx}`,
                 elements: nodes.concat(edges),
                 positions: positions
             };
@@ -1077,15 +1077,15 @@ def get_callbacks(app, org_name_map):
                     });
                     store.fullPositions = newFullPos;
                 } else {
-                    const idx = store.canvases.findIndex(c => c.id === prevTab);
-                    if (idx > -1) {
-                        const pos = store.canvases[idx].positions || {};
+                    const indx = store.canvases.findIndex(c => c.id === prevTab);
+                    if (indx > -1) {
+                        const pos = store.canvases[indx].positions || {};
                         currentElements.forEach(el => {
                             if (el.data && el.data.id && el.position) {
                                 pos[el.data.id] = el.position;
                             }
                         });
-                        store.canvases[idx].positions = pos;
+                        store.canvases[indx].positions = pos;
                     }
                 }
             }
@@ -1147,6 +1147,7 @@ def get_callbacks(app, org_name_map):
         prevent_initial_call=True
     )
 
+    # Switch to selected canvas by click on canvas-list item
     app.clientside_callback(
         """
         function(selectedValue) {
@@ -1154,13 +1155,13 @@ def get_callbacks(app, org_name_map):
                 return window.dash_clientside.no_update;
             }
 
-            const idx = selectedValue.lastIndexOf('-');
-            if (idx < 0) {
+            const indx = selectedValue.lastIndexOf('-');
+            if (indx < 0) {
                 return window.dash_clientside.no_update;
             }
 
-            const canvasId = selectedValue.substring(0, idx);
-            const action = selectedValue.substring(idx + 1);
+            const canvasId = selectedValue.substring(0, indx);
+            const action = selectedValue.substring(indx + 1);
             if (action !== 'label') {
                 return window.dash_clientside.no_update;
             }
@@ -1169,5 +1170,58 @@ def get_callbacks(app, org_name_map):
         """,
         Output('graph-tabs', 'value', allow_duplicate=True),
         Input('canvas-list', 'value'),
+        prevent_initial_call=True
+    )
+
+    # Perform selected action by click on canvas-list item
+    app.clientside_callback(
+        """
+        function(selectedAction, store) {
+            if (!selectedAction || !store || !store.canvases) {
+                return [ window.dash_clientside.no_update, null ];
+            }
+
+            const indx = selectedAction.lastIndexOf('-');
+            const canvasId = selectedAction.substring(0, indx);
+            const action   = selectedAction.substring(indx + 1);
+
+            const newStore = {
+                full: store.full,
+                fullPositions: store.fullPositions || {},
+                canvases: store.canvases.map(c => ({ ...c })),
+                nextCanvasIndex: store.nextCanvasIndex != null
+                          ? store.nextCanvasIndex
+                          : (store.canvases.length + 1)
+            };
+
+            if (action === 'rename') {
+                newStore.editingId = canvasId;
+            } else if (action === 'delete') {
+                newStore.canvases = newStore.canvases.filter(c => c.id !== canvasId);
+            } else if (action === 'duplicate') {
+                const orig = store.canvases.find(c => c.id === canvasId);
+                if (orig && store.canvases.length < 30) {
+                    const newIndx = newStore.nextCanvasIndex;
+                    newStore.canvases.push({
+                        id: `canvas-${newIndx}`,
+                        name: `${orig.name} (копия)`,
+                        elements: orig.elements,
+                        positions: { ...orig.positions }
+                    });
+                    newStore.nextCanvasIndex = newIndx + 1;
+                } else {
+                    return [ window.dash_clientside.no_update, null ];
+                }
+            } else {
+                return [ window.dash_clientside.no_update, null ];
+            }
+
+            return [ newStore, null ];
+        }
+        """,
+        Output('canvas-store', 'data', allow_duplicate=True),
+        Output('canvas-list-action','value'),
+        Input('canvas-list-action', 'value'),
+        State('canvas-store', 'data'),
         prevent_initial_call=True
     )
