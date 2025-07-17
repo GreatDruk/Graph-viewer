@@ -355,7 +355,22 @@ def base_layout(org_map, default_org: str) -> html.Div:
                                     )
                                 ], className='content__new-canvas'),
 
-                                html.Ul(id='canvas-list', className='content__canvas-list canvas-list'),
+                                html.Div([
+                                    dcc.RadioItems(
+                                        id='canvas-list',
+                                        options=[],
+                                        value='full',
+                                        className='canvas-list__select',
+                                        inputStyle={'display': 'none'}
+                                    ),
+                                    dcc.RadioItems(
+                                        id='canvas-list-action',
+                                        options=[],
+                                        value=None,
+                                        className='canvas-list__actions-overlay',
+                                        inputStyle={'display': 'none'}
+                                    ),
+                                ], className='content__canvas-list canvas-list'),
 
                                 html.Button(
                                     'Удалить все холсты',
