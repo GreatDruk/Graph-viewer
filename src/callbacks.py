@@ -1004,74 +1004,57 @@ def get_callbacks(app, org_name_map):
                 tabs.push(makeTab(c.name, c.id));
             });
 
-            items = [];
+            const options = [];
+            const optionsOverlay = [];
             const allCanvases = [{ id: 'full', name: 'Полный граф' }].concat(slides);
+
             allCanvases.forEach(c => {
-                const renameBtn = window.React.createElement(
-                    'button',
-                    { key: c.id + '-rename', className: 'canvas-list__icon', 'id': c.id + '-rename' },
-                    window.React.createElement(
-                        'img',
-                        {
-                            src: '/assets/icons/rename.svg',
-                            alt: 'rename',
-                            style: { width: '18px', height: '18px' }
-                        }
-                    )
-                );
-                const deleteBtn = window.React.createElement(
-                    'button',
-                    { key: c.id + '-delete', className: 'canvas-list__icon', 'id': c.id + '-delete' },
-                    window.React.createElement(
-                        'img',
-                        {
-                            src: '/assets/icons/delete.svg',
-                            alt: 'delete',
-                            style: { width: '18px', height: '18px' }
-                        }
-                    )
-                );
-                const dupBtn = window.React.createElement(
-                    'button',
-                    { key: c.id + '-dup', className: 'canvas-list__icon', 'id': c.id + '-dup' },
-                    window.React.createElement(
-                        'img',
-                        {
-                            src: '/assets/icons/duplicate.svg',
-                            alt: 'duplicate',
-                            style: { width: '18px', height: '18px' }
-                        }
-                    )
-                );
+                // label
+                options.push({
+                    label: window.React.createElement(
+                        'span', 
+                        { className: 'canvas-list__label' }, 
+                        c.name
+                    ),
+                    value: c.id + '-label',
+                });
 
-                const label = window.React.createElement(
-                    'span',
-                    { key: c.id + '-label', className: 'canvas-list__label', 'id': c.id + '-label' },
-                    c.name
-                );
+                // rename
+                optionsOverlay.push({
+                    label: window.React.createElement('img', {
+                        src: '/assets/icons/rename.svg',
+                        alt: 'rename',
+                    }),
+                    value: c.id + '-rename',
+                });
 
-                const actions = window.React.createElement(
-                    'div',
-                    { key: c.id + '-actions', className: 'canvas-list__actions' },
-                    renameBtn, deleteBtn, dupBtn
-                );
+                // delete
+                optionsOverlay.push({
+                    label: window.React.createElement('img', {
+                        src: '/assets/icons/delete.svg',
+                        alt: 'delete',
+                    }),
+                    value: c.id + '-delete',
+                });
 
-                const li = window.React.createElement(
-                    'li',
-                    { key: c.id, className: 'canvas-list__item', 'id': c.id },
-                    label,
-                    actions
-                );
+                // duplicate
+                optionsOverlay.push({
+                    label: window.React.createElement('img', {
+                        src: '/assets/icons/duplicate.svg',
+                        alt: 'duplicate',
+                    }),
+                    value: c.id + '-duplicate',
+                });
 
-                items.push(li);
             });
 
-            return [tabs, items];
+            return [tabs, options, optionsOverlay];
         }
         """,
         [
             Output('graph-tabs', 'children'),
-            Output('canvas-list', 'children'),
+            Output('canvas-list', 'options'),
+            Output('canvas-list-action', 'options'),
         ],
         Input('canvas-store', 'data')
     )
@@ -1163,3 +1146,86 @@ def get_callbacks(app, org_name_map):
         State('canvas-store', 'data'),
         prevent_initial_call=True
     )
+
+    app.clientside_callback(
+        """
+        function(selectedValue) {
+            if (!selectedValue) {
+                return window.dash_clientside.no_update;
+            }
+            const [canvasId, action] = selectedValue.split('-');
+            if (action !== 'label') {
+                return window.dash_clientside.no_update;
+            }
+            return canvasId;
+        }
+        """,
+        Output('active-canvas', 'data', allow_duplicate=True),
+        Input('canvas-list', 'value'),
+        prevent_initial_call=True
+    )
+
+    # app.clientside_callback(
+    #     """
+    #     function(renameClicks, deleteClicks, dupClicks, store) {
+    #         // Определяем, какой Input сработал
+    #         const trig = window.dash_clientside.callback_context.triggered[0].prop_id;
+    #         if (!trig) {
+    #             return window.dash_clientside.no_update;
+    #         }
+    #         // trig === '{"type":"canvas-action","action":"delete","index":"canvas-3"}'.n_clicks
+    #         const idJson = trig.split('.')[0];
+    #         const info = JSON.parse(idJson);
+    #         const { action, index } = info;
+
+    #         // Клонируем стор
+    #         let canvases = Array.isArray(store.canvases) ? [...store.canvases] : [];
+
+    #         if (action === 'delete') {
+    #             // Удалить
+    #             canvases = canvases.filter(c => c.id !== index);
+
+    #         } else if (action === 'duplicate') {
+    #             // Дублировать
+    #             const orig = canvases.find(c => c.id === index);
+    #             if (orig) {
+    #                 // даём новый id (например с суффиксом "-copy")
+    #                 const copy = {
+    #                     ...orig,
+    #                     id: index + '-copy-' + Date.now(),
+    #                     name: orig.name + ' (копия)'
+    #                 };
+    #                 canvases.push(copy);
+    #             }
+
+    #         } else if (action === 'rename') {
+    #             // Переименовать через JS-prompt
+    #             const newName = window.prompt('Новое имя холста:', 
+    #                                         canvases.find(c=>c.id===index)?.name || '');
+    #             if (newName) {
+    #                 canvases = canvases.map(c => {
+    #                     if (c.id === index) {
+    #                         return { ...c, name: newName };
+    #                     }
+    #                     return c;
+    #                 });
+    #             }
+    #         }
+
+    #         return { ...store, canvases: canvases };
+    #     }
+    #     """,
+    #     Output('canvas-store', 'data'),
+    #     [
+    #         Input('', 'n_clicks'),
+    #         Input('', 'n_clicks'),
+    #         Input('', 'n_clicks'),
+    #     ],
+    #     State('canvas-store', 'data'),
+    #     prevent_initial_call=True
+    # )
+
+
+
+
+
