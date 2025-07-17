@@ -1153,79 +1153,21 @@ def get_callbacks(app, org_name_map):
             if (!selectedValue) {
                 return window.dash_clientside.no_update;
             }
-            const [canvasId, action] = selectedValue.split('-');
+
+            const idx = selectedValue.lastIndexOf('-');
+            if (idx < 0) {
+                return window.dash_clientside.no_update;
+            }
+
+            const canvasId = selectedValue.substring(0, idx);
+            const action = selectedValue.substring(idx + 1);
             if (action !== 'label') {
                 return window.dash_clientside.no_update;
             }
             return canvasId;
         }
         """,
-        Output('active-canvas', 'data', allow_duplicate=True),
+        Output('graph-tabs', 'value', allow_duplicate=True),
         Input('canvas-list', 'value'),
         prevent_initial_call=True
     )
-
-    # app.clientside_callback(
-    #     """
-    #     function(renameClicks, deleteClicks, dupClicks, store) {
-    #         // Определяем, какой Input сработал
-    #         const trig = window.dash_clientside.callback_context.triggered[0].prop_id;
-    #         if (!trig) {
-    #             return window.dash_clientside.no_update;
-    #         }
-    #         // trig === '{"type":"canvas-action","action":"delete","index":"canvas-3"}'.n_clicks
-    #         const idJson = trig.split('.')[0];
-    #         const info = JSON.parse(idJson);
-    #         const { action, index } = info;
-
-    #         // Клонируем стор
-    #         let canvases = Array.isArray(store.canvases) ? [...store.canvases] : [];
-
-    #         if (action === 'delete') {
-    #             // Удалить
-    #             canvases = canvases.filter(c => c.id !== index);
-
-    #         } else if (action === 'duplicate') {
-    #             // Дублировать
-    #             const orig = canvases.find(c => c.id === index);
-    #             if (orig) {
-    #                 // даём новый id (например с суффиксом "-copy")
-    #                 const copy = {
-    #                     ...orig,
-    #                     id: index + '-copy-' + Date.now(),
-    #                     name: orig.name + ' (копия)'
-    #                 };
-    #                 canvases.push(copy);
-    #             }
-
-    #         } else if (action === 'rename') {
-    #             // Переименовать через JS-prompt
-    #             const newName = window.prompt('Новое имя холста:', 
-    #                                         canvases.find(c=>c.id===index)?.name || '');
-    #             if (newName) {
-    #                 canvases = canvases.map(c => {
-    #                     if (c.id === index) {
-    #                         return { ...c, name: newName };
-    #                     }
-    #                     return c;
-    #                 });
-    #             }
-    #         }
-
-    #         return { ...store, canvases: canvases };
-    #     }
-    #     """,
-    #     Output('canvas-store', 'data'),
-    #     [
-    #         Input('', 'n_clicks'),
-    #         Input('', 'n_clicks'),
-    #         Input('', 'n_clicks'),
-    #     ],
-    #     State('canvas-store', 'data'),
-    #     prevent_initial_call=True
-    # )
-
-
-
-
-
