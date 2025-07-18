@@ -480,6 +480,12 @@ input {
 .canvas-list__actions-overlay label:nth-child(3n) {
 	padding-right: 0;
 }
+.canvas-list__actions-overlay label:nth-child(1),
+.canvas-list__actions-overlay label:nth-child(2),
+.canvas-list__actions-overlay label:nth-child(3) {
+	opacity: 0;
+	pointer-events: none;
+}
 .canvas-list__actions-overlay label:nth-last-child(1),
 .canvas-list__actions-overlay label:nth-last-child(2),
 .canvas-list__actions-overlay label:nth-last-child(3) {
