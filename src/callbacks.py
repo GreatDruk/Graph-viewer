@@ -984,7 +984,7 @@ def get_callbacks(app, org_name_map):
         prevent_initial_call=True
     )
 
-    # Add new Tab
+    # Add new tab and canvas-list
     app.clientside_callback(
         """
         function(store) {
@@ -1064,7 +1064,7 @@ def get_callbacks(app, org_name_map):
         """
         function(newTab, store, currentElements, prevTab) {
             if (!store) {
-                return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+                return [window.dash_clientside.no_update, window.dash_clientside.no_update, window.dash_clientside.no_update];
             }
 
             if (prevTab) {
@@ -1090,12 +1090,15 @@ def get_callbacks(app, org_name_map):
                 }
             }
 
-            return [store, newTab];
+            const listValue = `${newTab}-label`;
+
+            return [store, newTab, listValue];
         }
         """,
         [
             Output('canvas-store', 'data', allow_duplicate=True),
             Output('active-canvas', 'data', allow_duplicate=True),
+            Output('canvas-list', 'value'),
         ],
         Input('graph-tabs', 'value'),
         [
@@ -1195,7 +1198,7 @@ def get_callbacks(app, org_name_map):
             };
 
             if (action === 'rename') {
-                newStore.editingId = canvasId;
+                newStore.editingName = canvasId;
             } else if (action === 'delete') {
                 newStore.canvases = newStore.canvases.filter(c => c.id !== canvasId);
             } else if (action === 'duplicate') {
