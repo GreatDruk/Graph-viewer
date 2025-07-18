@@ -1181,7 +1181,7 @@ def get_callbacks(app, org_name_map):
         """
         function(selectedAction, store) {
             if (!selectedAction || !store || !store.canvases) {
-                return [ window.dash_clientside.no_update, null ];
+                return [ window.dash_clientside.no_update, null, {'display': 'none'}, window.dash_clientside.no_update ];
             }
 
             const indx = selectedAction.lastIndexOf('-');
@@ -1197,8 +1197,25 @@ def get_callbacks(app, org_name_map):
                           : (store.canvases.length + 1)
             };
 
+            let inputStyle = { display: 'none' };
+            let inputValue = null;
+
             if (action === 'rename') {
                 newStore.editingName = canvasId;
+
+                const idx = store.canvases.findIndex(c=>c.id===canvasId) + 1;
+                const topPx = (idx * 36) + 'px';
+
+                inputValue = store.canvases.find(c=>c.id===canvasId)?.name || '';
+                inputStyle = {
+                    display: 'flex',
+                    top: topPx,
+                };
+
+                window.setTimeout(() => {
+                    const el = document.getElementById('rename-overlay-input');
+                    if (el) { el.focus(); el.select(); }
+                }, 0);
             } else if (action === 'delete') {
                 newStore.canvases = newStore.canvases.filter(c => c.id !== canvasId);
             } else if (action === 'duplicate') {
@@ -1213,18 +1230,65 @@ def get_callbacks(app, org_name_map):
                     });
                     newStore.nextCanvasIndex = newIndx + 1;
                 } else {
-                    return [ window.dash_clientside.no_update, null ];
+                    return [ window.dash_clientside.no_update, null, inputStyle, window.dash_clientside.no_update ];
                 }
             } else {
-                return [ window.dash_clientside.no_update, null ];
+                return [ window.dash_clientside.no_update, null, inputStyle, window.dash_clientside.no_update ];
             }
 
-            return [ newStore, null ];
+            return [ newStore, null, inputStyle, inputValue ];
         }
         """,
-        Output('canvas-store', 'data', allow_duplicate=True),
-        Output('canvas-list-action','value'),
+        [
+            Output('canvas-store', 'data', allow_duplicate=True),
+            Output('canvas-list-action','value'),
+            Output('rename-overlay', 'style'),
+            Output('rename-overlay-input', 'value'),
+        ],
         Input('canvas-list-action', 'value'),
         State('canvas-store', 'data'),
+        prevent_initial_call=True
+    )
+
+    app.clientside_callback(
+        """
+        function(nSubmit, nBlur, newName, store) {
+            if (!store || !store.editingName) {
+                return [ window.dash_clientside.no_update, window.dash_clientside.no_update ];
+            }
+            if (!(nSubmit > 0 || nBlur > 0)) {
+                return [ window.dash_clientside.no_update, window.dash_clientside.no_update ];
+            }
+
+            if (!newName) {
+                return [ window.dash_clientside.no_update, {'display': 'none'} ];
+            }
+
+            const id = store.editingName;
+            const newStore = { ...store };
+            newStore.canvases = newStore.canvases.map(c => {
+                if (c.id === id) {
+                    return { ...c, name: newName };
+                }
+                return c;
+            });
+
+            delete newStore.editingName;
+
+            return [ newStore, {'display': 'none'} ];
+        }
+        """,
+        [
+            Output('canvas-store', 'data', allow_duplicate=True),
+            Output('rename-overlay', 'style', allow_duplicate=True),
+        ],
+        [
+            Input('rename-overlay-input', 'n_submit'),
+            Input('rename-overlay-input', 'n_blur'),
+        ],
+        [
+            State('rename-overlay-input', 'value'),
+            State('canvas-store', 'data'),
+        ],
         prevent_initial_call=True
     )

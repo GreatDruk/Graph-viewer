@@ -396,7 +396,7 @@ def base_layout(org_map, default_org: str) -> html.Div:
                                                 n_clicks=0
                                             )
                                         ], className='canvas-list__rename-button search__button')
-                                    ], className='canvas-list__rename search'),
+                                    ], id='rename-overlay', className='canvas-list__rename search'),
 
                                 ], className='content__canvas-list canvas-list'),
 
