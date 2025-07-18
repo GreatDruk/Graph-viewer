@@ -379,6 +379,25 @@ def base_layout(org_map, default_org: str) -> html.Div:
                                         className='canvas-list__actions-overlay',
                                         inputStyle={'display': 'none'}
                                     ),
+
+                                    html.Div([
+                                        html.Div([
+                                            dcc.Input(
+                                                id='rename-overlay-input',
+                                                type='text',
+                                                debounce=True,
+                                            ),
+                                        ], className='canvas-list__rename-input search__input'),
+
+                                        html.Div([
+                                            html.Button(
+                                                '',
+                                                id='rename-overlay-input-button',
+                                                n_clicks=0
+                                            )
+                                        ], className='canvas-list__rename-button search__button')
+                                    ], className='canvas-list__rename search'),
+
                                 ], className='content__canvas-list canvas-list'),
 
                                 html.Button(
