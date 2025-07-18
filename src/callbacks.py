@@ -153,7 +153,7 @@ def get_callbacks(app, org_name_map):
         )
 
         # Default canvases
-        empty_store = {'full': elements, 'canvases': []}
+        empty_store = {'full': elements, 'canvases': [], 'nextCanvasIndex': 0,}
         default_active = 'full'
 
         # Default size option
@@ -905,12 +905,12 @@ def get_callbacks(app, org_name_map):
             const full = (store && store.full) || [];
             const canvases = (store && store.canvases) || [];
 
-            // Error: already 30 canvas 
-            if (canvases.length >= 30) {
+            // Error: already 50 canvas 
+            if (canvases.length >= 50) {
                 return [
                     window.dash_clientside.no_update,
                     {'display': 'flex'},
-                    'Вы достигли максимального количества холстов (30).'
+                    'Вы достигли максимального количества холстов (50).'
                 ];
             }
 
@@ -951,7 +951,7 @@ def get_callbacks(app, org_name_map):
             });
 
             // Create new object canvas
-            const indx = canvases.length + 1;
+            const indx = store.nextCanvasIndex + 1;
             const newCanvas = {
                 id: `canvas-${indx}`,
                 name: `${indx}`,
@@ -962,7 +962,8 @@ def get_callbacks(app, org_name_map):
             return [
                 {
                     full: full,
-                    canvases: canvases.concat(newCanvas).slice(-30)
+                    canvases: canvases.concat(newCanvas).slice(-50),
+                    nextCanvasIndex: indx,
                 }, 
                 {
                     'display': 'none'
@@ -1179,9 +1180,9 @@ def get_callbacks(app, org_name_map):
     # Perform selected action by click on canvas-list item
     app.clientside_callback(
         """
-        function(selectedAction, store) {
+        function(selectedAction, store, activeId) {
             if (!selectedAction || !store || !store.canvases) {
-                return [ window.dash_clientside.no_update, null, {'display': 'none'}, window.dash_clientside.no_update ];
+                return [ window.dash_clientside.no_update, null, {'display': 'none'}, window.dash_clientside.no_update, window.dash_clientside.no_update ];
             }
 
             const indx = selectedAction.lastIndexOf('-');
@@ -1192,13 +1193,12 @@ def get_callbacks(app, org_name_map):
                 full: store.full,
                 fullPositions: store.fullPositions || {},
                 canvases: store.canvases.map(c => ({ ...c })),
-                nextCanvasIndex: store.nextCanvasIndex != null
-                          ? store.nextCanvasIndex
-                          : (store.canvases.length + 1)
+                nextCanvasIndex: store.nextCanvasIndex + 1,
             };
 
             let inputStyle = { display: 'none' };
             let inputValue = null;
+            let newActive = window.dash_clientside.no_update;
 
             if (action === 'rename') {
                 newStore.editingName = canvasId;
@@ -1218,9 +1218,12 @@ def get_callbacks(app, org_name_map):
                 }, 0);
             } else if (action === 'delete') {
                 newStore.canvases = newStore.canvases.filter(c => c.id !== canvasId);
+                if (activeId === canvasId) {
+                    newActive = 'full';
+                }
             } else if (action === 'duplicate') {
                 const orig = store.canvases.find(c => c.id === canvasId);
-                if (orig && store.canvases.length < 30) {
+                if (orig && store.canvases.length < 50) {
                     const newIndx = newStore.nextCanvasIndex;
                     newStore.canvases.push({
                         id: `canvas-${newIndx}`,
@@ -1230,13 +1233,13 @@ def get_callbacks(app, org_name_map):
                     });
                     newStore.nextCanvasIndex = newIndx + 1;
                 } else {
-                    return [ window.dash_clientside.no_update, null, inputStyle, window.dash_clientside.no_update ];
+                    return [ window.dash_clientside.no_update, null, inputStyle, window.dash_clientside.no_update, newActive ];
                 }
             } else {
-                return [ window.dash_clientside.no_update, null, inputStyle, window.dash_clientside.no_update ];
+                return [ window.dash_clientside.no_update, null, inputStyle, window.dash_clientside.no_update, newActive ];
             }
 
-            return [ newStore, null, inputStyle, inputValue ];
+            return [ newStore, null, inputStyle, inputValue, newActive ];
         }
         """,
         [
@@ -1244,12 +1247,17 @@ def get_callbacks(app, org_name_map):
             Output('canvas-list-action','value'),
             Output('rename-overlay', 'style'),
             Output('rename-overlay-input', 'value'),
+            Output('graph-tabs', 'value', allow_duplicate=True),
         ],
         Input('canvas-list-action', 'value'),
-        State('canvas-store', 'data'),
+        [
+            State('canvas-store', 'data'),
+            State('active-canvas', 'data'),
+        ],
         prevent_initial_call=True
     )
 
+    # Save new name canvas
     app.clientside_callback(
         """
         function(nSubmit, nBlur, newName, store) {

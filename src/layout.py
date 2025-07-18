@@ -41,7 +41,8 @@ def base_layout(org_map, default_org: str) -> html.Div:
         dcc.Store(id='current-org', data=default_org),
         dcc.Store(id='canvas-store', data={
             'full': elements,
-            'canvases': []
+            'canvases': [],
+            'nextCanvasIndex': 0,
         }),
         dcc.Store(id='active-canvas', data='full'), 
 
