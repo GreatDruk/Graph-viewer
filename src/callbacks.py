@@ -1300,3 +1300,30 @@ def get_callbacks(app, org_name_map):
         ],
         prevent_initial_call=True
     )
+
+    # Button 'Delete all canvases'
+    app.clientside_callback(
+        """
+        function(nClicks, store) {
+            if (nClicks < 1 || !store) {
+                return window.dash_clientside.no_update;
+            }
+
+            const newStore = {
+                full: store.full,
+                fullPositions: store.fullPositions || {},
+                canvases: [],
+                nextCanvasIndex: 0
+            };
+
+            return [ newStore, 'full' ];
+        }
+        """,
+        [
+            Output('canvas-store', 'data', allow_duplicate=True),
+            Output('graph-tabs', 'value', allow_duplicate=True)
+        ],
+        Input('delete-all-canvases', 'n_clicks'),
+        State('canvas-store', 'data'),
+        prevent_initial_call=True
+    )
