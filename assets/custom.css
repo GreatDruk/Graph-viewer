@@ -501,6 +501,34 @@ input {
 	height: 18px;
 	width: 18px;
 }
+.canvas-list__rename {
+	position: absolute;
+	display: none;
+	z-index: 6;
+}
+.canvas-list__rename-input {
+	width: calc(100% - 50px);
+	border: none;
+	border-radius: 0;
+}
+.canvas-list__rename-input input {
+	border-radius: 0;
+}
+.canvas-list__rename-button {
+	border-radius: 0;
+}
+.canvas-list__rename-button button {
+    padding: 0 6px;
+    border: none;
+	border-radius: 0;
+}
+.canvas-list__rename-button button::after {
+	width: 21px;
+    height: 21px;
+	margin: -10px 0 0 10px;
+	background: url('icons/check.svg') no-repeat center;
+	background-size: contain;
+}
 
 /* Graph */
 .content__graph {
