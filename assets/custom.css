@@ -548,32 +548,41 @@ input {
 }
 .content__graph .tab-container {
     height: 100px;
-	overflow-x: scroll;
-    overflow-y: hidden;
+	overflow: hidden;
 }
 .content__graph .tab-container .tab  {
+	position: relative;
     height: 100%;
-	width: max-content;
-	margin-right: 4px;
+	min-width: 20px;
+	max-width: max-content;
+	overflow: hidden;
     border: none !important;
     padding: 0;
     background-color: #EEECE3;
 	cursor: default !important;
+}
+.content__graph .tab-container .tab:first-child {
+	min-width: 48px;
+}
+.content__graph .tab-container .tab:first-child span {
+	padding: 4px 10px;
 }
 .content__graph .tab-container .tab:hover {
 	background-color: #EEECE3;
 }
 .content__graph .tab-container .tab span {
 	display: block;
-    width: max-content;
+    white-space: nowrap;
     height: 100%;
     background-color: #EEECE3;
     border: 1px solid #373539 !important;
     border-radius: 12px 12px 0 0;
     text-align: center;
-    padding: 4px 10px;
+    padding: 4px;
     font-size: 15px;
 	cursor: pointer !important;
+	user-select: none;
+	direction: rtl;
 }
 .content__graph .tab-container .tab--selected span {
 	background-color: #373539;
@@ -585,6 +594,7 @@ input {
     margin-top: -75px;
     border: 1px solid #373539;
     border-radius: 30px;
+	box-sizing: border-box;
 	overflow: hidden;
 }
 
