@@ -410,6 +410,9 @@ input {
 }
 
 /* Canvas */
+.canvas-list__header {
+	margin-bottom: 7px;
+}
 .canvas-list {
 	position: relative;
   	display: block;
