@@ -954,7 +954,7 @@ def get_callbacks(app, org_name_map):
             const indx = store.nextCanvasIndex + 1;
             const newCanvas = {
                 id: `canvas-${indx}`,
-                name: `${indx}`,
+                name: `Холст ${indx}`,
                 elements: nodes.concat(edges),
                 positions: positions
             };
