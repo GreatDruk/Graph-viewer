@@ -1327,3 +1327,62 @@ def get_callbacks(app, org_name_map):
         State('canvas-store', 'data'),
         prevent_initial_call=True
     )
+
+    # Button 'Split by cluster'
+    app.clientside_callback(
+        """
+        function(n_clicks, store) {
+            if (n_clicks < 1 || !store || !store.full) {
+                return window.dash_clientside.no_update;
+            }
+
+            const full = store.full;
+
+            const clusters = Array.from(
+                new Set(
+                    full
+                    .filter(el => el.data && el.data.cluster != null)
+                    .map(el => el.data.cluster)
+                )
+            ).sort((a, b) => a - b);
+
+            const newStore = {
+                full: full,
+                fullPositions: store.fullPositions || {},
+                canvases: [],
+                nextCanvasIndex: 0
+            };
+
+            const maxCanvases = 50;
+            for (let i = 0; i < clusters.length && newStore.canvases.length < maxCanvases; i++) {
+                const cl = clusters[i];
+
+                const nodes = full.filter(e => e.data && e.data.cluster === cl).map(e => ({ ...e }));
+
+                const edges = full.filter(e => e.data && e.data.source != null)
+                            .filter(e =>
+                                nodes.some(n => n.data.id === e.data.source) &&
+                                nodes.some(n => n.data.id === e.data.target)
+                            )
+                            .map(e => ({ ...e }));
+
+                newStore.canvases.push({
+                    id: `canvas-${newStore.nextCanvasIndex}`,
+                    name: `Кластер ${cl}`,
+                    elements: nodes.concat(edges),
+                    positions: {},
+                });
+                newStore.nextCanvasIndex++;
+            }
+
+            return [ newStore, 'full' ];
+        }
+        """,
+        [
+            Output('canvas-store', 'data', allow_duplicate=True),
+            Output('graph-tabs', 'value', allow_duplicate=True)
+        ],
+        Input('split-by-clusters', 'n_clicks'),
+        State('canvas-store', 'data'),
+        prevent_initial_call=True
+    )
