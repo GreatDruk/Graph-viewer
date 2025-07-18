@@ -356,6 +356,8 @@ def base_layout(org_map, default_org: str) -> html.Div:
                                     )
                                 ], className='content__new-canvas'),
 
+                                html.Div(['Список холстов:'], className='canvas-list__header'),
+
                                 html.Div([
                                     dcc.RadioItems(
                                         id='canvas-list',
