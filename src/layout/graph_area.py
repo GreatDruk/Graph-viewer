@@ -21,4 +21,48 @@ def graph_area(
     Returns:
         html.Div: Container with stored state, tabs, Cytoscape graph, legend, and tooltip
     """
-    pass
+    return html.Div([
+        # Store to hold size-metric min/max for client-side resizing
+        dcc.Store(
+            id='size-limits',
+            data=metrics_bounds
+        ),
+
+        # Tabs for switching between full graph and custom canvases
+        dcc.Tabs(
+            id='graph-tabs',
+            value='full'
+        ),
+
+        # Cytoscape network component
+        cyto.Cytoscape(
+            id='network-graph',
+            elements=elements,
+            layout={'name': 'preset'},
+            stylesheet=basic_stylesheet,
+            userPanningEnabled=True,
+            boxSelectionEnabled=True,
+            autounselectify=False,
+            wheelSensitivity=0.15,
+            style = {
+                'width': '100%',
+                'backgroundColor': '#EEECE3'
+            }
+        ),
+
+        # Color legend bar and labels (shown when metric coloring active)
+        html.Div([
+            html.Div(id='legend-bar'),
+            html.Div(id='legend-labels')
+        ], id='color-legend'),
+        
+        # Tooltip overlay: dynamic content and 'View publications' button
+        html.Div([
+            html.Div(id='hover-tooltip-content'),
+            html.Button(
+                'Смотреть публикации',
+                id='show-info-button',
+                n_clicks=0,
+            )
+        ], id='hover-tooltip'),
+    ], className='content__graph')
