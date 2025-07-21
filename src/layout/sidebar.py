@@ -238,6 +238,68 @@ def sidebar(
         ],
     )
 
+    # Search Tab: cluster and author search inputs
+    search_tab = dcc.Tab(
+        label='',
+        value='Search',
+        className='content__tab content__tab_3',
+        children=[
+            # Cluster search
+            html.Div([
+                html.Label('Поиск кластера:'),
+                html.Div([
+                    dcc.Input(
+                        id='cluster-filter',
+                        type='number',
+                        min=int(nodes['cluster'].min()),
+                        max=int(nodes['cluster'].max()),
+                        placeholder='Введите номер',
+                        debounce=True
+                    )
+                ], className='search__input'),
+
+                html.Div([
+                    html.Button(
+                        '',
+                        id='cluster-button',
+                        n_clicks=0
+                    )
+                ], className='search__button')
+            ], className='content__cluster search'),
+
+            # Author search
+            html.Div([
+                html.Label('Поиск автора:'),
+                html.Div([
+                    dcc.Input(
+                        id='person-search',
+                        type='text',
+                        placeholder='Иванов И.И.',
+                        debounce=True
+                    )
+                ], className='search__input'),
+
+                html.Div([
+                    html.Button(
+                        '',
+                        id='search-button',
+                        n_clicks=0
+                    )
+                ], className='search__button')
+            ], className='search'),
+
+            # Reset button
+            html.Div([
+                html.Button(
+                    'Сбросить поиск',
+                    id='reset-button',
+                    className='button',
+                    n_clicks=0
+                )
+            ], className='content__reset'),
+        ],
+    )
+
     # Assemble sidebar with all tabs
     return html.Div([
         # Logo
