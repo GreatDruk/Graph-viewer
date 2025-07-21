@@ -300,6 +300,89 @@ def sidebar(
         ],
     )
 
+    # Canvas Management Tab: new canvas button, canvas list, delete and split buttons
+    canvas_tab = dcc.Tab(
+        label='',
+        value='Canvas management',
+        className='content__tab content__tab_4',
+        children=[
+            # Add new canvas
+            html.Div([
+                html.Button(
+                    'Новый холст',
+                    id='create-new-canvas',
+                    className='button',
+                    n_clicks=0
+                ),
+                html.Div(
+                    id='canvas-error',
+                    className='error__mini'
+                )
+            ], className='content__new-canvas'),
+
+            # Canvas list
+            html.Div(['Список холстов:'], className='canvas-list__header'),
+            html.Div([
+                dcc.RadioItems(
+                    id='canvas-list',
+                    options=[],
+                    value='full-label',
+                    className='canvas-list__select',
+                    inputStyle={
+                        'position': 'absolute',
+                        'opacity': 0,
+                        'width': '100%',
+                        'height': '36px',
+                        'top': 0,
+                        'left': 0,
+                        'margin': 0,
+                        'cursor': 'pointer'
+                    },
+                ),
+                dcc.RadioItems(
+                    id='canvas-list-action',
+                    options=[],
+                    value=None,
+                    className='canvas-list__actions-overlay',
+                    inputStyle={'display': 'none'}
+                ),
+                # Rename input
+                html.Div([
+                    html.Div([
+                        dcc.Input(
+                            id='rename-overlay-input',
+                            type='text',
+                            debounce=True,
+                        ),
+                    ], className='canvas-list__rename-input search__input'),
+
+                    html.Div([
+                        html.Button(
+                            '',
+                            id='rename-overlay-input-button',
+                            n_clicks=0
+                        )
+                    ], className='canvas-list__rename-button search__button')
+                ], id='rename-overlay', className='canvas-list__rename search'),
+
+            ], className='content__canvas-list canvas-list'),
+
+            # Other buttons
+            html.Button(
+                'Удалить все холсты',
+                id='delete-all-canvases',
+                className='button',
+                n_clicks=0
+            ),
+            html.Button(
+                'Разбить по кластерам',
+                id='split-by-clusters',
+                className='button',
+                n_clicks=0
+            ),
+        ],
+    )
+
     # Assemble sidebar with all tabs
     return html.Div([
         # Logo
