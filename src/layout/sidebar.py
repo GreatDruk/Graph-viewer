@@ -150,6 +150,94 @@ def sidebar(
         ],
     )
 
+    # Visualization Tab: node sizing, edge threshold, checkboxes, metrics coloring
+    vis_tab = dcc.Tab(
+        label='',
+        value='Visualization',
+        className='content__tab content__tab_2',
+        children=[
+            # Node size dropdown
+            html.Div([
+                html.Label('Размер вершин:'),
+                dcc.Dropdown(
+                    id='size-dropdown',
+                    options=size_options,
+                    value=size_options[0]['value']
+                )
+            ], className='content__size dropdown'),
+
+            # Edge weight threshold input
+            html.Div([
+                html.Label('Минимальный вес ребра:'),
+                dcc.Input(
+                    id='edge-threshold',
+                    type='number',
+                    min=int(edges['weight'].min()),
+                    max=int(edges['weight'].max()),
+                    step=1,
+                    value=int(edges['weight'].min()),
+                )
+            ], className='content__edge-threshold dropdown'),
+
+            # Show weights / isolates checkboxes
+            html.Div([
+                dcc.Checklist(
+                    id='show-weights',
+                    options=[{
+                        'label': 'Показывать веса рёбер',
+                        'value': 'show'
+                    }],
+                    value=['show'],
+                    labelStyle={'display': 'flex'}
+                ),
+                dcc.Checklist(
+                    id='show-isolates',
+                    options=[{
+                        'label': 'Показывать вершины без рёбер', 
+                        'value': 'show'
+                    }],
+                    value=['show'],
+                    labelStyle={'display': 'flex'}
+                ),
+            ], className='content__checkbox'),
+
+            # Color metrics controls
+            html.Div([
+                html.Button(
+                    'Анализ по метрике',
+                    id='color-button',
+                    className='button',
+                    n_clicks=0
+                ),
+                html.Div([
+                        dcc.Dropdown(
+                            id='color-by-dropdown',
+                            options=color_options,
+                            placeholder='Выберите показатель',
+                        ),
+                    ],
+                    id='color-by-container',
+                    className='dropdown',
+                    style={'display': 'none'}
+                ),
+
+                html.Div([
+                        dcc.Store(
+                            id='node-color-limits',
+                            data={'vmin': None, 'vmax': None}
+                        ),
+                        html.Label('Порог минимума:'),
+                        dcc.Input(id='node-color-min', type='number'),
+                        html.Label('Порог максимума:'),
+                        dcc.Input(id='node-color-max', type='number'),
+                    ],
+                    id='color-thresholds-container',
+                    style={'display': 'none'}
+                ),
+            ], className='content__metric'),
+        ],
+    )
+
     # Assemble sidebar with all tabs
     return html.Div([
         # Logo
