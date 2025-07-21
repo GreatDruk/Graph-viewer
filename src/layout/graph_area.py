@@ -10,4 +10,15 @@ def graph_area(
         basic_stylesheet,
         metrics_bounds
     ):
+    """
+    Build the graph display section.
+
+    Args:
+        elements (list[dict]): Cytoscape elements (nodes + edges) to render
+        basic_stylesheet (list[dict]): Base Cytoscape stylesheet definitions
+        metrics_bounds (dict): Precomputed min/max bounds for all size metrics
+
+    Returns:
+        html.Div: Container with stored state, tabs, Cytoscape graph, legend, and tooltip
+    """
     pass
