@@ -41,7 +41,7 @@ def base_layout(org_map, default_org):
 
     return html.Div([
         # Overlay components and hidden stores
-        overlays(org_map, default_org),
+        overlays(elements, org_map, default_org),
 
         # Main content: sidebar controls + graph view
         html.Div([
