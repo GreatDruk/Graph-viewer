@@ -1,0 +1,79 @@
+/* Overlay styles */
+#overlay {
+	display: flex;
+}
+.overlay__container {
+	background-color: #373539;
+	color: #EEECE3;
+	padding: 20px;
+	border-radius: 16px;
+	min-width: 450px;
+}
+.overlay__header {
+	margin-bottom: 14px;
+	font-size: 18px;
+}
+.overlay__buttons {
+	display: flex;
+}
+.overlay__buttons button {
+	width: max-content;
+	min-width: 83px;
+	margin: 20px 15px 0 0;
+	padding: 0 15px;
+}
+
+
+/* Information pub styles */
+.overlay {
+	display: none;
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	background-color: rgba(55, 53, 57, 0.3);
+	align-items: center;
+	justify-content: center;
+	backdrop-filter: blur(3px);
+	z-index: 100;
+}
+#info-overlay-content {
+	max-width: 800px;
+}
+.info-overlay__header {
+	text-transform: capitalize;
+	font-weight: 600;
+	font-size: 18px;
+	margin-bottom: 10px;
+}
+.info-overlay__description {
+	margin-bottom: 20px;
+}
+.info-overlay__description div {
+	margin-bottom: 5px;
+}
+.info-overlay__text {
+	margin-bottom: 20px;
+	max-height: 250px;
+	overflow-y: scroll;
+}
+.info-overlay__table {
+	width: 100%;
+	border-collapse: collapse;
+}
+.info-overlay__table thead th:first-child {
+	width: 85%;
+	text-align: left;
+}
+.info-overlay__table tbody td:first-child {
+	text-align: left;
+}
+.info-overlay__table tbody td {
+	text-align: center;
+	vertical-align: top;
+	padding: 5px 0;
+}
+.info-overlay__close {
+	width: 100px;
+}
