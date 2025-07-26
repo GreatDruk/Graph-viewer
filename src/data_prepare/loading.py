@@ -1,3 +1,8 @@
+"""
+Module: loading
+Provides functions to load raw data files for a given organization,
+including thesaurus, publications, nodes, and edges maps.
+"""
 import os
 import pandas as pd
 from .constants import BASE_PATH, THESAURUS_FILE, PUBLICATIONS_FILE, NODES_FILE, EDGES_FILE
