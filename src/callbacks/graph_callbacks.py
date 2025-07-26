@@ -45,13 +45,13 @@ def graph_callbacks(app):
         prevent_initial_call=True
     )
 
-    # Client-side graph styling: resize, filter, color nodes/edges
+    # Client-side graph styling: resize nodes by selected metric
     app.clientside_callback(
         """
-        function(sizeValue, edgeTh, person, showWeight, showIsolates, colorMetric, vmin, vmax, basic, sizeLimits, limitsStore) {
+        function(sizeValue, basic, sizeLimits) {
             let graphStyle = JSON.parse(JSON.stringify(basic));
 
-            // 1) Resize nodes by selected metric
+            // Resize nodes by selected metric
             const bounds = sizeLimits[sizeValue];
             const VM = bounds.min;
             const VX = bounds.max;
@@ -66,23 +66,83 @@ def graph_callbacks(app):
                 });
             };
 
-            // 2) Hide edges below threshold
+            return graphStyle;
+        }
+        """,
+        Output('network-graph', 'stylesheet', allow_duplicate=True),
+        Input('size-dropdown', 'value'),
+        [
+            State('network-graph', 'stylesheet'),
+            State('size-limits', 'data'),
+        ],
+        prevent_initial_call=True
+    )
+
+    # Client-side graph styling: hide edges below threshold
+    app.clientside_callback(
+        """
+        function(edgeTh, basic, showIsolates) {
+            let graphStyle = JSON.parse(JSON.stringify(basic));
+
+            // Hide edges below threshold
             graphStyle.push({
                 selector: `edge[weight < ${edgeTh}]`,
                 style: { 'display': 'none' }
             });
             graphStyle.push({
+                selector: `node[max_edge_weight < ${edgeTh}]`,
+                style: { 'display': showIsolates.length ? 'element' : 'none' }
+            });
+            
+            graphStyle.push({
                 selector: `edge[weight >= ${edgeTh}]`,
                 style: { 'display': 'element' }
             });
+            graphStyle.push({
+                selector: `node[max_edge_weight >= ${edgeTh}]`,
+                style: { 'display': 'element'}
+            });
 
-            // 3) Show edge labels
+            return graphStyle;
+        }
+        """,
+        Output('network-graph', 'stylesheet', allow_duplicate=True),
+        Input('edge-threshold', 'value'),
+        [
+            State('network-graph', 'stylesheet'),
+            State('show-isolates', 'value'),
+        ],
+        prevent_initial_call=True
+    )
+
+    # Client-side graph styling: show edge labels
+    app.clientside_callback(
+        """
+        function(showWeight, basic) {
+            let graphStyle = JSON.parse(JSON.stringify(basic));
+
+            // Show edge labels
             graphStyle.push({
                 selector: 'edge',
                 style: { 'text-opacity': showWeight.length ? 1 : 0 }
             });
 
-            // 4) Show isolate nodes
+            return graphStyle;
+        }
+        """,
+        Output('network-graph', 'stylesheet', allow_duplicate=True),
+        Input('show-weights', 'value'),
+        State('network-graph', 'stylesheet'),
+        prevent_initial_call=True
+    )
+
+    # Client-side graph styling: show isolate nodes
+    app.clientside_callback(
+        """
+        function(showIsolates, edgeTh, basic) {
+            let graphStyle = JSON.parse(JSON.stringify(basic));
+
+            // Show isolate nodes
             graphStyle.push({
                 selector: `node[max_edge_weight < ${edgeTh}]`,
                 style: { 'display': showIsolates.length ? 'element' : 'none' }
@@ -92,43 +152,25 @@ def graph_callbacks(app):
                 style: { 'display': 'element'}
             });
 
-            // 5) Color nodes by chosen metric
-            if(colorMetric) {
-                let minVal = sizeLimits[colorMetric].min;
-                let maxVal = sizeLimits[colorMetric].max;
+            return graphStyle;
+        }
+        """,
+        Output('network-graph', 'stylesheet', allow_duplicate=True),
+        Input('show-isolates', 'value'),
+        [
+            State('edge-threshold', 'value'),
+            State('network-graph', 'stylesheet'),
+        ],
+        prevent_initial_call=True
+    )
 
-                minVal = Math.max(minVal, vmin);
-                maxVal = Math.min(maxVal, vmax);
+    # Client-side graph styling: highlight nodes matching search
+    app.clientside_callback(
+        """
+        function(person, basic) {
+            let graphStyle = JSON.parse(JSON.stringify(basic));
 
-                if (minVal <= maxVal) {
-                    const midVal = (minVal + maxVal) / 2;
-                    graphStyle.push({
-                        selector: `node[${colorMetric} <= ${midVal}][${colorMetric} >= ${minVal}]`,
-                        style: {
-                            'background-color': `mapData(${colorMetric}, ${minVal}, ${midVal}, #440154, #26828E)`,
-                            'display': 'element'
-                        }
-                    });
-                    graphStyle.push({
-                        selector: `node[${colorMetric} > ${midVal}][${colorMetric} <= ${maxVal}]`,
-                        style: {
-                            'background-color': `mapData(${colorMetric}, ${midVal}, ${maxVal}, #26828E, #FDE725)`,
-                            'display': 'element'
-                        }
-                    });
-
-                    graphStyle.push({
-                        selector: `node[${colorMetric} < ${vmin}]`,
-                        style: { 'display': 'none' }
-                    });
-                    graphStyle.push({
-                        selector: `node[${colorMetric} > ${vmax}]`,
-                        style: { 'display': 'none' }
-                    });
-                }
-            };
-
-            // 6) Highlight nodes matching search
+            // Highlight nodes matching search
             if(person) {
                 const low = person.toLowerCase();
                 graphStyle.push({
@@ -145,25 +187,12 @@ def graph_callbacks(app):
         }
         """,
         Output('network-graph', 'stylesheet', allow_duplicate=True),
-        [
-            Input('size-dropdown', 'value'),
-            Input('edge-threshold', 'value'),
-            Input('person-search', 'value'),
-            Input('show-weights', 'value'),
-            Input('show-isolates', 'value'),
-            Input('color-by-dropdown', 'value'),
-            Input('node-color-min', 'value'),
-            Input('node-color-max', 'value'),
-        ],
-        [
-            State('network-graph', 'stylesheet'),
-            State('size-limits', 'data'),
-            State('node-color-limits','data'),
-        ],
+        Input('person-search', 'value'),
+        State('network-graph', 'stylesheet'),
         prevent_initial_call=True
     )
 
-    # Cluster filtering: highlight nodes by cluster and select others
+    # Client-side graph styling: highlight nodes by cluster and select others
     app.clientside_callback(
         """
         function(clusterValue, elements, basic) {
@@ -226,6 +255,64 @@ def graph_callbacks(app):
         ],
         Input('reset-button', 'n_clicks'),
         State('network-graph', 'stylesheet'),
+        prevent_initial_call=True
+    )
+
+    # Client-side graph styling: color nodes by chosen metric
+    app.clientside_callback(
+        """
+        function(colorMetric, vmin, vmax, basic, sizeLimits) {
+            let graphStyle = JSON.parse(JSON.stringify(basic));
+
+            // Color nodes by chosen metric
+            if(colorMetric) {
+                let minVal = sizeLimits[colorMetric].min;
+                let maxVal = sizeLimits[colorMetric].max;
+
+                minVal = Math.max(minVal, vmin);
+                maxVal = Math.min(maxVal, vmax);
+
+                if (minVal <= maxVal) {
+                    const midVal = (minVal + maxVal) / 2;
+                    graphStyle.push({
+                        selector: `node[${colorMetric} <= ${midVal}][${colorMetric} >= ${minVal}]`,
+                        style: {
+                            'background-color': `mapData(${colorMetric}, ${minVal}, ${midVal}, #440154, #26828E)`,
+                            'display': 'element'
+                        }
+                    });
+                    graphStyle.push({
+                        selector: `node[${colorMetric} > ${midVal}][${colorMetric} <= ${maxVal}]`,
+                        style: {
+                            'background-color': `mapData(${colorMetric}, ${midVal}, ${maxVal}, #26828E, #FDE725)`,
+                            'display': 'element'
+                        }
+                    });
+
+                    graphStyle.push({
+                        selector: `node[${colorMetric} < ${vmin}]`,
+                        style: { 'display': 'none' }
+                    });
+                    graphStyle.push({
+                        selector: `node[${colorMetric} > ${vmax}]`,
+                        style: { 'display': 'none' }
+                    });
+                }
+            };
+
+            return graphStyle;
+        }
+        """,
+        Output('network-graph', 'stylesheet', allow_duplicate=True),
+        [
+            Input('color-by-dropdown', 'value'),
+            Input('node-color-min', 'value'),
+            Input('node-color-max', 'value'),
+        ],
+        [
+            State('network-graph', 'stylesheet'),
+            State('size-limits', 'data')
+        ],
         prevent_initial_call=True
     )
 
