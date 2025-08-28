@@ -100,7 +100,7 @@ def scale_coordinates(series: pd.Series, new_min: int = 0, new_max: int = None) 
         elif count < 500:
             new_max = 2000
         elif count < 1000:
-            new_max = 3000
+            new_max = 2600
         elif count < 3000:
             new_max = 4000
         elif count < 4000:
