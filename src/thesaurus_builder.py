@@ -30,6 +30,46 @@ def build_author_thesaurus(org_id: str, similarity_coefficient: float = 0.8, sur
     # Load author names
     df = pd.read_csv(input_file)
 
+    names_col = "Authors"
+    ids_col = "Author(s) ID"
+
+    # If ID column present -> use ID-based grouping (strict pairing by position)
+    if ids_col in df.columns:
+        # Assembling a thesaurus
+        thesaurus = {}
+        id_to_canonical = {}
+
+        def split_semicolon(cell: str):
+            if pd.isna(cell):
+                return []
+            return [p.strip() for p in str(cell).split(';') if p.strip()]
+
+        for _, row in df.iterrows():
+            raw_names = row.get(names_col, '')
+            raw_ids = row.get(ids_col, '')
+
+            names = split_semicolon(raw_names)
+            ids = split_semicolon(raw_ids)
+
+            for aid, aname in zip(ids, names):
+                aid = str(aid).strip()
+                aname = aname.strip()
+
+                if aid not in id_to_canonical:
+                    id_to_canonical[aid] = aname
+                else:
+                    canonical = id_to_canonical[aid]
+                    if aname != canonical:
+                        thesaurus[aname] = canonical
+
+        # Write out thesaurus file
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write("Label\tReplace by\n")
+            for label, replace_by in thesaurus.items():
+                f.write(f"{label}\t{replace_by}\n")
+        return
+
     authors_series = (
         df['Authors']
         .dropna()
