@@ -45,6 +45,8 @@ def prepare_network_elements(org_id: str):
     nodes = load_nodes(org_id)
     edges = load_edges(org_id)
 
+    publication['pub_id'] = range(1, len(publication) + 1)
+
     # Build authors info and years map
     authors_info = build_authors_with_inform(publication, replace_dict)
     years_map = authors_info.set_index('Authors')[['First_pub_year', 'Last_pub_year']].to_dict('index')
@@ -56,6 +58,28 @@ def prepare_network_elements(org_id: str):
         .to_dict('index')
     )
     save_cache(cache_path_authors, authors_map)
+
+    # Build pub_info: dict pub_id -> dict of fields we need (Cited by etc.)
+    pub_info = (
+        publication
+        .set_index('pub_id')
+        [['Title', 'Year', 'Cited by']]
+        .to_dict('index')
+    )
+
+    # Map authors -> list(pub_id)
+    pub_with_authors = publication.assign(
+        Authors = lambda df: df['Authors'].apply(
+            standardize_author_names, replace_dict=replace_dict
+        )
+    ).explode('Authors')
+
+    author_pubids = (
+        pub_with_authors
+        .groupby('Authors', as_index=True)['pub_id']
+        .agg(list)
+        .to_dict()
+    )
 
     # Convert IDs to names
     edges['first_author'] = edges['first_author'].apply(
@@ -143,6 +167,7 @@ def prepare_network_elements(org_id: str):
                 'color': node['node_color'],
                 'cluster': node['cluster'],
                 'max_edge_weight': node['max_edge_weight'],
+                'pub_ids': author_pubids.get(node['label'], []),
             },
             'position': {'x': node['x'], 'y': node['y']}
         }
@@ -252,6 +277,7 @@ def prepare_network_elements(org_id: str):
         'h_index': h_index,
         'years': years,
         'counts_publication_by_year': counts_by_year,
+        'pub_info': pub_info,
     }
     
     try:
