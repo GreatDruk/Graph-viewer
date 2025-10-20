@@ -84,6 +84,7 @@ def upload_org(app, org_name_map):
         h_index = data['h_index']
         years = data['years']
         counts_publication_by_year = data['counts_publication_by_year']
+        pub_info = data['pub_info']
 
         # Name organization
         org_name = org_name_map.get(org_id, org_id)
@@ -151,7 +152,7 @@ def upload_org(app, org_name_map):
         )
 
         # Initialize canvas store with full graph only
-        empty_store = {'full': elements, 'canvases': [], 'nextCanvasIndex': 0,}
+        empty_store = {'full': elements, 'canvases': [], 'nextCanvasIndex': 0, 'fullPubInfo': pub_info}
         default_active = 'full'
 
         # Default size option
