@@ -83,6 +83,7 @@ def canvas_callbacks(app):
                     full: full,
                     canvases: canvases.concat(newCanvas).slice(-50),
                     nextCanvasIndex: indx,
+                    fullPubInfo: store.fullPubInfo,
                 }, 
                 {
                     'display': 'none'
@@ -229,6 +230,221 @@ def canvas_callbacks(app):
         prevent_initial_call=True
     )
 
+    # Update info panel when active canvas changes
+    app.clientside_callback(
+        """
+        function(activeID, store, currentName, currentFig) {
+            if (!store) {
+                return [
+                    window.dash_clientside.no_update,
+                    window.dash_clientside.no_update,
+                    window.dash_clientside.no_update,
+                    window.dash_clientside.no_update,
+                    window.dash_clientside.no_update,
+                    window.dash_clientside.no_update
+                ];
+            }
+
+            // pick elements depending on active canvas
+            let elements = [];
+
+            if (activeID === 'full' || !activeID) {
+                elements = store.full || [];
+            } else {
+                const canvas = (store.canvases || []).find(c => c.id === activeID);
+                if (!canvas) {
+                    return [
+                        window.dash_clientside.no_update,
+                        window.dash_clientside.no_update,
+                        window.dash_clientside.no_update,
+                        window.dash_clientside.no_update,
+                        window.dash_clientside.no_update,
+                        window.dash_clientside.no_update
+                    ];
+                }
+                elements = canvas.elements || [];
+            }
+
+            const nodes = elements.filter(e => e && e.data && !('source' in e.data));
+
+            const numAuthors = nodes.length;
+
+            // Build counts of pubIDs among nodes in the selected elements
+            const pubCount = new Map();
+            nodes.forEach(n => {
+                if (n.data && n.data.pubIDs) {
+                    const arr = n.data.pubIDs;
+                    for (let pubID of arr) {
+                        if (pubID === null || pubID === undefined) continue;
+                        const key = String(pubID);
+                        pubCount.set(key, (pubCount.get(key) || 0) + 1);
+                    }
+                }
+            });
+
+            const pubSet = new Set();
+            if (activeID === 'full' || !activeID) {
+                for (let [k, cnt] of pubCount.entries()) pubSet.add(k);
+            } else {
+                for (let [k, cnt] of pubCount.entries()) {
+                    if (cnt >= 2) pubSet.add(k);
+                }
+            }
+
+            const numPubs = pubSet.size;
+
+            // Sum citations
+            let cntCites = 0;
+            const citesArr = [];
+            const pubInfo = store.fullPubInfo || {};
+
+            pubSet.forEach(pubID => {
+                const info = pubInfo[pubID];
+                let c = 0;
+                if (info) {
+                    if (info['Cited by'] !== undefined) c = Number(info['Cited by']);
+                }
+                if (isNaN(c)) c = 0;
+                cntCites += c;
+                citesArr.push(c);
+            });
+
+            // Compute h-index
+            citesArr.sort((a,b) => b - a);
+            let h = 0;
+            for (let i = 0; i < citesArr.length; i++) {
+                if (citesArr[i] >= i + 1){
+                    h = i + 1;
+                } else {
+                    break;
+                }
+            }
+
+            // Build name
+            const orgName = currentName.split(',')[0].trim() || '';
+            let org_name = orgName;
+            if (activeID && activeID !== 'full') {
+                const canvas = (store.canvases || []).find(c => c.id === activeID);
+                if (canvas && canvas.name) {
+                    org_name = orgName ? (orgName + ', ' + canvas.name) : canvas.name;
+                }
+            }
+
+            const orgInfoAuthors = `Авторов: ${numAuthors}`;
+            const orgInfoPub = `Публикаций: ${numPubs}`;
+            const orgInfoCites = `Цитирований: ${cntCites}`;
+            const orgInfoHindex = `Индекс Хирша: ${h}`;
+
+            // Build timeseries (years / counts) for the selected pubSet
+            let baseX = null;
+            if (currentFig && currentFig.data && currentFig.data.length > 0) {
+                const xval = currentFig.data[0].x;
+                if (Array.isArray(xval)) {
+                    baseX = xval.slice();
+                } else if (xval && typeof xval === 'object' && Array.isArray(xval.values)) {
+                    baseX = xval.values.slice();
+                } else {
+                    baseX = null;
+                }
+            }
+            
+            if (!baseX) {
+            let minY = null, maxY = null;
+            pubSet.forEach(pid => {
+                    const info = pubInfo[String(pid)] || pubInfo[pid] || null;
+                    if (!info) return;
+                    const y = Number(info['Year'] || info['year']);
+                    if (!isFinite(y)) return;
+                    if (minY === null || y < minY) minY = y;
+                    if (maxY === null || y > maxY) maxY = y;
+                });
+                if (minY === null) {
+                    baseX = [];
+                } else {
+                    baseX = [];
+                    for (let y = minY; y <= maxY; y++) baseX.push(y);
+                }
+            } else {
+                baseX = baseX.map(v => {
+                    const n = Number(v);
+                    return isFinite(n) ? n : v;
+                });
+            }
+
+            // build year counts
+            const yearCounts = {};
+            pubSet.forEach(pid => {
+                const info = pubInfo[String(pid)] || pubInfo[pid] || null;
+                if (!info) return;
+                const y = Number(info['Year'] || info['year']);
+                if (!isFinite(y)) return;
+                yearCounts[y] = (yearCounts[y] || 0) + 1;
+            });
+
+            // y aligned with baseX
+            const newY = baseX.map(yy => yearCounts[yy] || 0);
+
+            // clone & update only data[0].x/y
+            let newFig = null;
+            if (!currentFig) {
+                newFig = {
+                    data: [{
+                        x: baseX,
+                        y: newY,
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: '#EEECE3', width: 2 },
+                        fill: 'none',
+                        connectgaps: true,
+                        hoverinfo: 'x+y'
+                    }],
+                    layout: { height: 200, paper_bgcolor: '#373539', plot_bgcolor: '#373539' }
+                };
+            } else {
+                newFig = JSON.parse(JSON.stringify(currentFig));
+                if (!newFig.data || newFig.data.length === 0) {
+                    newFig.data = [{
+                        x: baseX, y: newY, type: 'scatter', mode: 'lines',
+                        line: { color: '#EEECE3', width: 2 }, fill: 'none', connectgaps: true, hoverinfo: 'x+y'
+                    }];
+                } else {
+                    newFig.data[0].x = baseX;
+                    newFig.data[0].y = newY;
+                    newFig.data[0].type = newFig.data[0].type || 'scatter';
+                    newFig.data[0].mode = 'lines';
+                    newFig.data[0].fill = newFig.data[0].fill || 'none';
+                    newFig.data[0].connectgaps = true;
+                    if (!newFig.data[0].line) newFig.data[0].line = { color: '#EEECE3', width: 2 };
+                }
+            }
+
+            return [
+                org_name,
+                orgInfoAuthors,
+                orgInfoPub,
+                orgInfoCites,
+                orgInfoHindex,
+                newFig
+            ];
+        }
+        """,
+        [
+            Output('name-organization', 'children', allow_duplicate=True),
+            Output('info-organization-authors', 'children', allow_duplicate=True),
+            Output('info-organization-publications', 'children', allow_duplicate=True),
+            Output('info-organization-cites', 'children', allow_duplicate=True),
+            Output('info-organization-hindex', 'children', allow_duplicate=True),
+            Output('info-organization-graph', 'figure', allow_duplicate=True),
+        ],
+        Input('active-canvas', 'data'),
+        [
+            State('canvas-store', 'data'),
+            State('name-organization', 'children'),
+            State('info-organization-graph', 'figure'),
+        ],
+        prevent_initial_call=True
+    )
+
     # Render selected canvas elements
     app.clientside_callback(
         """
@@ -313,6 +529,7 @@ def canvas_callbacks(app):
                 fullPositions: store.fullPositions || {},
                 canvases: store.canvases.map(c => ({ ...c })),
                 nextCanvasIndex: store.nextCanvasIndex + 1,
+                fullPubInfo: store.fullPubInfo,
             };
 
             let inputStyle = { display: 'none' };
@@ -432,7 +649,8 @@ def canvas_callbacks(app):
                 full: store.full,
                 fullPositions: store.fullPositions || {},
                 canvases: [],
-                nextCanvasIndex: 0
+                nextCanvasIndex: 0,
+                fullPubInfo: store.fullPubInfo,
             };
 
             return [ newStore, 'full' ];
@@ -469,7 +687,8 @@ def canvas_callbacks(app):
                 full: full,
                 fullPositions: store.fullPositions || {},
                 canvases: [],
-                nextCanvasIndex: 0
+                nextCanvasIndex: 0,
+                fullPubInfo: store.fullPubInfo,
             };
 
             const maxCanvases = 50;
