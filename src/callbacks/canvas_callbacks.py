@@ -241,6 +241,7 @@ def canvas_callbacks(app):
                     window.dash_clientside.no_update,
                     window.dash_clientside.no_update,
                     window.dash_clientside.no_update,
+                    window.dash_clientside.no_update,
                     window.dash_clientside.no_update
                 ];
             }
@@ -259,6 +260,7 @@ def canvas_callbacks(app):
                         window.dash_clientside.no_update,
                         window.dash_clientside.no_update,
                         window.dash_clientside.no_update,
+                        window.dash_clientside.no_update,
                         window.dash_clientside.no_update
                     ];
                 }
@@ -272,8 +274,8 @@ def canvas_callbacks(app):
             // Build counts of pubIDs among nodes in the selected elements
             const pubCount = new Map();
             nodes.forEach(n => {
-                if (n.data && n.data.pubIDs) {
-                    const arr = n.data.pubIDs;
+                if (n.data && n.data.pub_ids) {
+                    const arr = n.data.pub_ids;
                     for (let pubID of arr) {
                         if (pubID === null || pubID === undefined) continue;
                         const key = String(pubID);
@@ -329,9 +331,18 @@ def canvas_callbacks(app):
                     org_name = orgName ? (orgName + ', ' + canvas.name) : canvas.name;
                 }
             }
-
+            
+            const clusterSet = new Set();
+            nodes.forEach(n => {
+                if (n.data && n.data.cluster !== undefined && n.data.cluster !== null) {
+                    clusterSet.add(n.data.cluster);
+                }
+            });
+            const numClusters = clusterSet.size;
+            
             const orgInfoAuthors = `Авторов: ${numAuthors}`;
             const orgInfoPub = `Публикаций: ${numPubs}`;
+            const orgInfoClusters = `Кластеров: ${numClusters}`;
             const orgInfoCites = `Цитирований: ${cntCites}`;
             const orgInfoHindex = `Индекс Хирша: ${h}`;
 
@@ -422,6 +433,7 @@ def canvas_callbacks(app):
                 org_name,
                 orgInfoAuthors,
                 orgInfoPub,
+                orgInfoClusters,
                 orgInfoCites,
                 orgInfoHindex,
                 newFig
@@ -432,6 +444,7 @@ def canvas_callbacks(app):
             Output('name-organization', 'children', allow_duplicate=True),
             Output('info-organization-authors', 'children', allow_duplicate=True),
             Output('info-organization-publications', 'children', allow_duplicate=True),
+            Output('info-organization-cluster', 'children', allow_duplicate=True),
             Output('info-organization-cites', 'children', allow_duplicate=True),
             Output('info-organization-hindex', 'children', allow_duplicate=True),
             Output('info-organization-graph', 'figure', allow_duplicate=True),
